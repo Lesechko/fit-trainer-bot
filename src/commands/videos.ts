@@ -30,6 +30,8 @@ export function videoUploadCallback(ctx: Context) {
 }
 
 export function listVideosCommandCallback(ctx: Context) {
+  console.log({ ctx });
+
   if (!ctx.from) {
     return;
   }
