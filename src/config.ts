@@ -14,7 +14,7 @@ export const ADMIN_ID: number | null = Number.isFinite(parsedAdminId)
   ? parsedAdminId
   : null;
 
-export const TIMEZONE = process.env.TZ || 'UTC+3';
+export const TIMEZONE = process.env.TZ || 'Europe/Kyiv';
 
 export const DATABASE_URL: string = (() => {
   const url = process.env.DATABASE_URL;
