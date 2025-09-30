@@ -2,6 +2,7 @@ import { Context, Telegraf } from 'telegraf';
 import { ADMIN_ID } from './config';
 import { db } from './db';
 import { dayCaption } from './messages';
+import { COURSES } from './config';
 
 export function calculateProgramDay(startDateISO: string, now: Date = new Date()): number {
   const [y, m, d] = startDateISO.split('-').map((n) => Number(n));
@@ -14,39 +15,40 @@ export function calculateProgramDay(startDateISO: string, now: Date = new Date()
 
 export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
   try {
-    // Get all users
-    const usersResult: any = await db.query(
-      'SELECT telegram_id, start_date FROM users'
-    );
-    const users = usersResult.rows as { telegram_id: number; start_date: string }[];
+    // Multi-course: iterate each course, send to enrolled users only
+    const courseRows: any = await db.query('SELECT id, slug FROM courses WHERE is_active = TRUE');
+    const courses = courseRows.rows as { id: number; slug: string }[];
 
-    // Get all videos
-    const videosResult: any = await db.query(
-      'SELECT day, file_id FROM videos ORDER BY day'
-    );
-    const videos = videosResult.rows as { day: number; file_id: string }[];
+    for (const course of courses) {
+      // users enrolled to this course with start_date
+      const ucRes: any = await db.query(
+        'SELECT u.telegram_id, uc.start_date FROM user_courses uc JOIN users u ON u.id = uc.user_id WHERE uc.course_id = $1',
+        [course.id]
+      );
+      const enrolled = ucRes.rows as { telegram_id: number; start_date: string }[];
 
-    const promises = users.map((user) => {
-      const day = calculateProgramDay(user.start_date);
-      const video = videos.find(v => v.day === day);
+      if (enrolled.length === 0) continue;
 
-      if (video) {
+      const videosRes: any = await db.query(
+        'SELECT day, file_id FROM course_videos WHERE course_id = $1 ORDER BY day',
+        [course.id]
+      );
+      const videos = videosRes.rows as { day: number; file_id: string }[];
+
+      const sends = enrolled.map((user) => {
+        const day = calculateProgramDay(user.start_date);
+        const video = videos.find((v) => v.day === day);
+        if (!video) return Promise.resolve();
+
         return bot.telegram
-          .sendVideo(user.telegram_id, video.file_id, {
-            caption: dayCaption(day),
-          })
+          .sendVideo(user.telegram_id, video.file_id, { caption: dayCaption(day) })
           .catch((sendErr: Error) => {
-            console.error(
-              `Помилка надсилання ${user.telegram_id}:`,
-              sendErr.message
-            );
+            console.error(`Помилка надсилання ${user.telegram_id}:`, sendErr.message);
           });
-      }
+      });
 
-      return Promise.resolve();
-    });
-
-    await Promise.all(promises);
+      await Promise.all(sends);
+    }
   } catch (error) {
     console.error('Error in sendDailyVideos:', error);
     throw error;

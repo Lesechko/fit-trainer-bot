@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { healthyJoints } from './courses/1_healthy-joints';
+import { CourseStaticConfig } from './types';
 
 export const BOT_TOKEN: string = (() => {
   const token = process.env.BOT_TOKEN;
@@ -12,11 +14,17 @@ export const ADMIN_ID: number | null = Number.isFinite(parsedAdminId)
   ? parsedAdminId
   : null;
 
-export const TIMEZONE = process.env.TZ || 'UTC';
+export const TIMEZONE = process.env.TZ || 'UTC+3';
 
 export const DATABASE_URL: string = (() => {
   const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
+
+  if (!url) {
+    throw new Error('DATABASE_URL is not set');
+  }
+
   return url;
 })();
 
+
+export const COURSES: CourseStaticConfig[] = [healthyJoints];
