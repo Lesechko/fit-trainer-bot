@@ -15,6 +15,7 @@ import {
   GENACCESS_CREATED,
   GENACCESS_ERROR,
   GENACCESS_CODE,
+  GENACCESS_LINK,
   CREATECOURSE_USAGE,
   CREATECOURSE_OK,
   CREATECOURSE_ERROR,
@@ -106,7 +107,12 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
     );
 
     await ctx.reply(GENACCESS_CREATED(slug, code, expiresAt ? expiresAt.toISOString().split('T')[0] : null));
-    return ctx.reply(GENACCESS_CODE(code));
+    await ctx.reply(GENACCESS_CODE(code));
+    if (process.env.BOT_USERNAME) {
+      const link = `https://t.me/${process.env.BOT_USERNAME}?start=${code}`;
+      return ctx.reply(GENACCESS_LINK(link));
+    }
+    return;
   } catch (e) {
     console.error(e);
     return ctx.reply(GENACCESS_ERROR);

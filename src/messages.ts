@@ -61,7 +61,8 @@ export const DELVIDEO_NOT_FOUND = (day: number) =>
 // Broadcast
 export const SENDVIDEO_USAGE = '⚠️ Використай так: /sendvideo <file_id>';
 export const SENDVIDEO_START = '📣 Надсилаю відео всім користувачам...';
-export const SENDVIDEO_DONE = (count: number) => `✅ Відео надіслано ${count} користувачам`;
+export const SENDVIDEO_DONE = (count: number) =>
+  `✅ Відео надіслано ${count} користувачам`;
 export const SENDVIDEO_ERROR = '⚠️ Помилка при розсилці відео';
 
 // Admin help
@@ -85,31 +86,43 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 /senddaily — надіслати щоденні відео вручну`;
 
 // Access codes
-export const GENACCESS_USAGE = '⚠️ Використай: /genaccess <course_slug> [expires_days]';
-export const GENACCESS_CREATED = (slug: string, _code: string, expires: string | null) =>
-  `✅ Код доступу створено для курсу ${slug}.${expires ? `\nДійсний до: ${expires}` : ''}`;
-export const GENACCESS_CODE = (code: string) => `🔑 Код: ${code}`;
+export const GENACCESS_USAGE =
+  '⚠️ Використай: /genaccess <course_slug> [expires_days]';
+export const GENACCESS_CREATED = (
+  slug: string,
+  _code: string,
+  expires: string | null
+) =>
+  `✅ Код доступу створено для курсу ${slug}.${
+    expires ? `\nДійсний до: ${expires}` : ''
+  }`;
+export const GENACCESS_CODE = (code: string) => code;
+export const GENACCESS_LINK = (url: string) =>
+  `🔗 Посилання для старту: ${url}`;
 export const GENACCESS_ERROR = '⚠️ Не вдалося створити код';
 
 export const REDEEM_USAGE = '⚠️ Використай: /redeem <code>';
 export const REDEEM_INVALID = '⚠️ Код недійсний або прострочений';
 export const REDEEM_USED = '⚠️ Код вже використано';
-export const REDEEM_OK = (slug: string) => `✅ Тебе зараховано на курс: ${slug}!`;
+export const REDEEM_OK = (slug: string) =>
+  `✅ Тебе зараховано на курс: ${slug}!`;
 
 // Start flow
-export const START_ASK_CODE = '🔑 Надішли, будь ласка, свій код доступу командою /redeem <code> або скористайся посиланням з параметром.';
+export const START_ASK_CODE =
+  '🔑 Надішли, будь ласка, свій код доступу командою /redeem <code> або скористайся посиланням з параметром.';
 
 // Courses (мультикурсова логіка)
 export const COURSE_NOT_FOUND = '⚠️ Курс не знайдено';
 export const COURSES_EMPTY = '📂 Наразі курсів немає';
 export const listCourses = (list: string) => `🎓 Курси:\n${list}`;
 
-export const CREATECOURSE_USAGE = '⚠️ Використай: /createcourse <slug> <title>'; 
+export const CREATECOURSE_USAGE = '⚠️ Використай: /createcourse <slug> <title>';
 export const CREATECOURSE_OK = (slug: string) => `✅ Курс ${slug} створено`;
 export const CREATECOURSE_ERROR = '⚠️ Не вдалося створити курс';
 
-export const SETCOURSE_USAGE = '⚠️ Використай: /setcourse <slug>'; 
-export const SETCOURSE_OK = (slug: string) => `✅ Поточний курс встановлено: ${slug}`;
+export const SETCOURSE_USAGE = '⚠️ Використай: /setcourse <slug>';
+export const SETCOURSE_OK = (slug: string) =>
+  `✅ Поточний курс встановлено: ${slug}`;
 
 // Sync courses from config
 export const SYNC_COURSES_START = '🔄 Синхронізую курси з конфігурації...';
