@@ -14,6 +14,7 @@ import {
   GENACCESS_USAGE,
   GENACCESS_CREATED,
   GENACCESS_ERROR,
+  GENACCESS_CODE,
   CREATECOURSE_USAGE,
   CREATECOURSE_OK,
   CREATECOURSE_ERROR,
@@ -81,7 +82,7 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
 
   const parts = getCommandParts(ctx);
   if (parts.length < 2 || parts.length > 3) {
-    return ctx.reply(GENACCESS_USAGE, { parse_mode: 'HTML' });
+    return ctx.reply(GENACCESS_USAGE);
   }
 
   const slug = parts[1];
@@ -104,9 +105,8 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
       [code, course.id, ctx.from!.id, expiresAt ? expiresAt.toISOString() : null]
     );
 
-    return ctx.reply(GENACCESS_CREATED(slug, code, expiresAt ? expiresAt.toISOString().split('T')[0] : null), {
-      parse_mode: 'HTML',
-    });
+    await ctx.reply(GENACCESS_CREATED(slug, code, expiresAt ? expiresAt.toISOString().split('T')[0] : null));
+    return ctx.reply(GENACCESS_CODE(code));
   } catch (e) {
     console.error(e);
     return ctx.reply(GENACCESS_ERROR);

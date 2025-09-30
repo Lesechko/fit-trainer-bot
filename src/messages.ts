@@ -86,8 +86,9 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 
 // Access codes
 export const GENACCESS_USAGE = '⚠️ Використай: /genaccess <course_slug> [expires_days]';
-export const GENACCESS_CREATED = (slug: string, code: string, expires: string | null) =>
-  `✅ Код створено для курсу ${slug}:\n<code>${code}</code>${expires ? `\nДійсний до: ${expires}` : ''}`;
+export const GENACCESS_CREATED = (slug: string, _code: string, expires: string | null) =>
+  `✅ Код доступу створено для курсу ${slug}.${expires ? `\nДійсний до: ${expires}` : ''}`;
+export const GENACCESS_CODE = (code: string) => `🔑 Код: ${code}`;
 export const GENACCESS_ERROR = '⚠️ Не вдалося створити код';
 
 export const REDEEM_USAGE = '⚠️ Використай: /redeem <code>';
