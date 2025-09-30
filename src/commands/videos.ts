@@ -22,11 +22,10 @@ import { isAdmin } from '../utils';
 export function videoUploadCallback(ctx: Context) {
   const message: any = (ctx as any).message;
   const video = message?.video;
+  console.log({ video, ctx });
 
-  if (video?.file_id) {
-    if (isAdmin(ctx)) {
-      return ctx.reply(videoFileId(video.file_id), { parse_mode: 'HTML' });
-    }
+  if (video?.file_id && isAdmin(ctx)) {
+    return ctx.reply(videoFileId(video.file_id), { parse_mode: 'HTML' });
   }
 }
 
