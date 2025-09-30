@@ -73,3 +73,9 @@ export const DELVIDEO_SUCCESS = (day: number) =>
   `✅ Відео для дня ${day} видалено`;
 export const DELVIDEO_NOT_FOUND = (day: number) =>
   `⚠️ Відео для дня ${day} не знайдено`;
+
+// Broadcast
+export const SENDVIDEO_USAGE = '⚠️ Використай так: /sendvideo <file_id>';
+export const SENDVIDEO_START = '📣 Надсилаю відео всім користувачам...';
+export const SENDVIDEO_DONE = (count: number) => `✅ Відео надіслано ${count} користувачам`;
+export const SENDVIDEO_ERROR = '⚠️ Помилка при розсилці відео';

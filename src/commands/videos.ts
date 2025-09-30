@@ -1,5 +1,4 @@
 import { Context, Telegraf } from 'telegraf';
-import { db } from '../db';
 import { VideoRow } from '../types';
 import {
   ADMIN_ONLY_LIST,
@@ -15,14 +14,19 @@ import {
   DELVIDEO_ERROR,
   DELVIDEO_SUCCESS,
   DELVIDEO_NOT_FOUND,
+  SENDVIDEO_USAGE,
+  SENDVIDEO_START,
+  SENDVIDEO_DONE,
+  SENDVIDEO_ERROR,
   videoFileId,
 } from '../messages';
 import { isAdmin } from '../utils';
+import { db } from '../db';
+import { ensureFromAndAdmin, getCommandParts, isValidDay, formatVideosList } from './helpers';
 
 export function videoUploadCallback(ctx: Context) {
   const message: any = (ctx as any).message;
   const video = message?.video;
-  console.log({ video, ctx });
 
   if (video?.file_id && isAdmin(ctx)) {
     return ctx.reply(videoFileId(video.file_id), { parse_mode: 'HTML' });
@@ -30,15 +34,7 @@ export function videoUploadCallback(ctx: Context) {
 }
 
 export function listVideosCommandCallback(ctx: Context) {
-  console.log({ ctx });
-
-  if (!ctx.from) {
-    return;
-  }
-
-  if (!isAdmin(ctx)) {
-    return ctx.reply(ADMIN_ONLY_LIST);
-  }
+  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
 
   db.query('SELECT day, file_id FROM videos ORDER BY day')
     .then((result: any) => {
@@ -48,10 +44,7 @@ export function listVideosCommandCallback(ctx: Context) {
         return ctx.reply(LISTVIDEOS_EMPTY);
       }
 
-      const list = rows
-        .map((r) => `День ${r.day}: ${r.file_id.substring(0, 20)}...`)
-        .join('\n');
-      return ctx.reply(listVideos(list));
+      return ctx.reply(listVideos(formatVideosList(rows)));
     })
     .catch((err: Error) => {
       console.error(err);
@@ -60,22 +53,9 @@ export function listVideosCommandCallback(ctx: Context) {
 }
 
 export function addVideoCommandCallback(ctx: Context) {
-  if (!ctx.from) {
-    return;
-  }
+  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
 
-  if (!isAdmin(ctx)) {
-    return ctx.reply(ADMIN_ONLY_LIST);
-  }
-
-  const text = (ctx.message as any)?.text as string | undefined;
-
-  if (!text) {
-    return ctx.reply(ADDVIDEO_USAGE);
-  }
-
-  const parts = text.trim().split(/\s+/);
-
+  const parts = getCommandParts(ctx);
   if (parts.length !== 3) {
     return ctx.reply(ADDVIDEO_USAGE);
   }
@@ -83,7 +63,7 @@ export function addVideoCommandCallback(ctx: Context) {
   const day = Number(parts[1]);
   const fileId = parts[2];
 
-  if (!Number.isFinite(day) || day < 1 || day > 10) {
+  if (!isValidDay(day)) {
     return ctx.reply(ADDVIDEO_BAD_DAY);
   }
 
@@ -105,29 +85,16 @@ export function addVideoCommandCallback(ctx: Context) {
 }
 
 export function delVideoCommandCallback(ctx: Context) {
-  if (!ctx.from) {
-    return;
-  }
+  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
 
-  if (!isAdmin(ctx)) {
-    return ctx.reply(ADMIN_ONLY_LIST);
-  }
-
-  const text = (ctx.message as any)?.text as string | undefined;
-
-  if (!text) {
-    return ctx.reply(DELVIDEO_USAGE);
-  }
-
-  const parts = text.trim().split(/\s+/);
-
+  const parts = getCommandParts(ctx);
   if (parts.length !== 2) {
     return ctx.reply(DELVIDEO_USAGE);
   }
 
   const day = Number(parts[1]);
 
-  if (!Number.isFinite(day) || day < 1 || day > 10) {
+  if (!isValidDay(day)) {
     return ctx.reply(ADDVIDEO_BAD_DAY);
   }
 
@@ -143,4 +110,40 @@ export function delVideoCommandCallback(ctx: Context) {
       console.error(err);
       ctx.reply(DELVIDEO_ERROR);
     });
+}
+
+export async function sendVideoBroadcastCommandCallback(ctx: Context) {
+  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+
+  const parts = getCommandParts(ctx);
+  if (parts.length !== 2) {
+    return ctx.reply(SENDVIDEO_USAGE);
+  }
+
+  const fileId = parts[1];
+  await ctx.reply(SENDVIDEO_START);
+
+  try {
+    const res: any = await db.query('SELECT telegram_id FROM users');
+    const users = res.rows as { telegram_id: number }[];
+
+    let sent = 0;
+    await Promise.all(
+      users.map((u) =>
+        ctx.telegram
+          .sendVideo(u.telegram_id, fileId)
+          .then(() => {
+            sent += 1;
+          })
+          .catch((e: Error) => {
+            console.error(`Broadcast to ${u.telegram_id} failed:`, e.message);
+          })
+      )
+    );
+
+    await ctx.reply(SENDVIDEO_DONE(sent));
+  } catch (e) {
+    console.error('Broadcast error:', e);
+    await ctx.reply(SENDVIDEO_ERROR);
+  }
 }

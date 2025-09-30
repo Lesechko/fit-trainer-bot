@@ -1,6 +1,7 @@
 import { Context, Telegraf } from 'telegraf';
 import { db } from '../db';
-import { START_OK, USER_SAVE_ERROR, NOT_REGISTERED, PROGRAM_COMPLETED, dayCaption } from '../messages';
+import { START_OK, USER_SAVE_ERROR, dayCaption } from '../messages';
+import { getCommandParts } from './helpers';
 import { calculateProgramDay } from '../utils';
 
 export function startCommandCallback(ctx: Context) {
@@ -49,17 +50,12 @@ export function dayCommandCallback(ctx: Context) {
               ctx.replyWithVideo(videoRow.file_id, {
                 caption: dayCaption(day),
               });
-            } else {
-              ctx.reply(PROGRAM_COMPLETED);
             }
           });
-      } else {
-        ctx.reply(NOT_REGISTERED);
       }
     })
     .catch((err: Error) => {
       console.error('Error fetching user:', err);
-      ctx.reply(NOT_REGISTERED);
     });
 }
 

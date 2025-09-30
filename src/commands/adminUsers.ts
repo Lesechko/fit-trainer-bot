@@ -1,5 +1,4 @@
 import { Context, Telegraf } from 'telegraf';
-import { ADMIN_ID } from '../config';
 import { db } from '../db';
 import { WhitelistRow } from '../types';
 import {
@@ -14,24 +13,12 @@ import {
   listUsers,
 } from '../messages';
 import { isAdmin } from '../utils';
+import { ensureFromAndAdmin, getCommandParts } from './helpers';
 
 export function addUserCommandCallback(ctx: Context) {
-  if (!ctx.from) {
-    return;
-  }
-  
-  if (!isAdmin(ctx)) {
-    return ctx.reply(ADMIN_ONLY_ADD);
-  }
+  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_ADD)) return;
 
-  const text = (ctx.message as any)?.text as string | undefined;
-
-  if (!text) {
-    return ctx.reply(ADDUSER_USAGE);
-  }
-  
-  const parts = text.trim().split(/\s+/);
-
+  const parts = getCommandParts(ctx);
   if (parts.length !== 2) {
     return ctx.reply(ADDUSER_USAGE);
   }
@@ -56,13 +43,7 @@ export function addUserCommandCallback(ctx: Context) {
 }
 
 export function listUsersCommandCallback(ctx: Context) {
-  if (!ctx.from) {
-    return;
-  }
-  
-  if (!isAdmin(ctx)) {
-    return ctx.reply(ADMIN_ONLY_LIST);
-  }
+  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
 
   db.query('SELECT telegram_id FROM whitelist')
     .then((result: any) => {

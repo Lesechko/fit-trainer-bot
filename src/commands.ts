@@ -10,6 +10,7 @@ import {
   listVideosCommandCallback,
   addVideoCommandCallback,
   delVideoCommandCallback,
+  sendVideoBroadcastCommandCallback,
 } from './commands/videos';
 import { sendDailyCommandCallback } from './commands/misc';
 
@@ -27,6 +28,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.command('listvideos', listVideosCommandCallback);
   bot.command('addvideo', addVideoCommandCallback);
   bot.command('delvideo', delVideoCommandCallback);
+  bot.command('sendvideo', sendVideoBroadcastCommandCallback);
 
   // Misc commands
   bot.command('senddaily', sendDailyCommandCallback(bot));
