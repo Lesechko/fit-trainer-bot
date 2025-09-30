@@ -77,6 +77,11 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 
 /genaccess <course_slug> [expires_days] — згенерувати код доступу
 
+/createcourse <slug> <title> — створити курс
+/courses — список курсів
+/setcourse <slug> — встановити поточний курс (контекст адміна)
+/synccourses — синхронізувати курси з конфігурації
+
 /senddaily — надіслати щоденні відео вручну`;
 
 // Access codes
@@ -104,3 +109,8 @@ export const CREATECOURSE_ERROR = '⚠️ Не вдалося створити �
 
 export const SETCOURSE_USAGE = '⚠️ Використай: /setcourse <slug>'; 
 export const SETCOURSE_OK = (slug: string) => `✅ Поточний курс встановлено: ${slug}`;
+
+// Sync courses from config
+export const SYNC_COURSES_START = '🔄 Синхронізую курси з конфігурації...';
+export const SYNC_COURSES_DONE = '✅ Курси синхронізовано';
+export const SYNC_COURSES_ERROR = '⚠️ Не вдалося синхронізувати курси';

@@ -21,9 +21,13 @@ import {
   listCourses,
   SETCOURSE_USAGE,
   SETCOURSE_OK,
+  SYNC_COURSES_START,
+  SYNC_COURSES_DONE,
+  SYNC_COURSES_ERROR,
 } from '../messages';
 import { isAdmin } from '../utils';
 import { ensureFromAndAdmin, getCommandParts } from './helpers';
+import { COURSES } from '../config';
 
 export function addUserCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_ADD)) return;
@@ -169,6 +173,24 @@ export async function setCourseContextCommandCallback(ctx: Context) {
   } catch (e) {
     console.error(e);
     return ctx.reply(SETCOURSE_USAGE);
+  }
+}
+
+export async function syncCoursesFromConfigCommandCallback(ctx: Context) {
+  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+
+  try {
+    await ctx.reply(SYNC_COURSES_START);
+    for (const c of COURSES) {
+      await db.query(
+        'INSERT INTO courses (slug, title, is_active) VALUES ($1, $2, TRUE) ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, is_active = TRUE',
+        [c.slug, c.title]
+      );
+    }
+    return ctx.reply(SYNC_COURSES_DONE);
+  } catch (e) {
+    console.error(e);
+    return ctx.reply(SYNC_COURSES_ERROR);
   }
 }
 
