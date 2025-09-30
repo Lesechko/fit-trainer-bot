@@ -18,18 +18,22 @@ import {
   SENDVIDEO_START,
   SENDVIDEO_DONE,
   SENDVIDEO_ERROR,
-  videoFileId,
 } from '../messages';
 import { isAdmin } from '../utils';
 import { db } from '../db';
-import { ensureFromAndAdmin, getCommandParts, isValidDay, formatVideosList } from './helpers';
+import {
+  ensureFromAndAdmin,
+  getCommandParts,
+  isValidDay,
+  formatVideosList,
+} from './helpers';
 
 export function videoUploadCallback(ctx: Context) {
   const message: any = (ctx as any).message;
   const video = message?.video;
 
   if (video?.file_id && isAdmin(ctx)) {
-    return ctx.reply(videoFileId(video.file_id), { parse_mode: 'HTML' });
+    return ctx.reply(video.file_id);
   }
 }
 

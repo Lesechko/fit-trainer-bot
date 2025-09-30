@@ -41,8 +41,6 @@ export const listUsers = (list: string) => `📋 Whitelist:\n${list}`;
 
 // Media upload
 export const VIDEO_RECEIVED = '✅ Отримав file_id, перевір консоль';
-export const videoFileId = (fileId: string) =>
-  `📂 file_id:\n<code>${fileId}</code>\n\nСкопіюй та використай: <code>/addvideo &lt;день&gt; ${fileId}</code>`;
 
 // Admin commands
 export const SEND_DAILY_START = '⏰ Надсилаю щоденні відео...';
