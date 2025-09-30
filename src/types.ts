@@ -53,13 +53,18 @@ export type CourseAccessCodeRow = {
   used_at: string | null;
 };
 
+// Static config for hardcoded courses in code
 export type CourseStaticConfig = {
   slug: string;
   title: string;
   days: number;
   welcome: string;
+  // Time in HH:MM (24h) to send daily course video in TIMEZONE
+  dailyTime?: string; // default '09:00' if not set
   motivation?: {
     time: string; // '09:00' in TIMEZONE
-    messages: string[]; // length can be < days; rotate or clamp
+    messages: string[];
   };
 };
+
+// (duplicate removed)

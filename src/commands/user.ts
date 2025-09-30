@@ -93,9 +93,11 @@ async function redeemWithCode(ctx: Context, code: string) {
     if (!row) {
       return ctx.reply(REDEEM_INVALID);
     }
+
     if (row.is_used) {
       return ctx.reply(REDEEM_USED);
     }
+    
     if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
       return ctx.reply(REDEEM_INVALID);
     }
@@ -114,10 +116,11 @@ async function redeemWithCode(ctx: Context, code: string) {
     );
 
     const course = COURSES.find((c) => c.slug === row.slug);
+    ctx.reply(REDEEM_OK(row.slug));
+
     if (course?.welcome) {
       await ctx.reply(course.welcome);
     }
-    return ctx.reply(REDEEM_OK(row.slug));
   } catch (e) {
     console.error(e);
     return ctx.reply(REDEEM_INVALID);

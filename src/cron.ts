@@ -1,21 +1,42 @@
 import cron from 'node-cron';
 import { Telegraf, Context } from 'telegraf';
-import { TIMEZONE } from './config';
+import { TIMEZONE, COURSES } from './config';
 import { sendDailyVideos } from './utils';
-import { COURSES } from './config';
 
 export function scheduleDaily(bot: Telegraf<Context>) {
-  cron.schedule(
-    '0 9 * * *',
-    async () => {
-      try {
-        await sendDailyVideos(bot);
-      } catch (error) {
-        console.error('Error in scheduleDaily:', error);
-      }
-    },
-    { timezone: TIMEZONE }
-  );
+  // If any course defines dailyTime, schedule per course; otherwise default 09:00
+  const anyHasDaily = COURSES.some((c) => c.dailyTime);
+  if (anyHasDaily) {
+    for (const course of COURSES) {
+      const t = course.dailyTime || '09:00';
+      const [hh, mm] = t.split(':');
+      const expr = `${Number(mm)} ${Number(hh)} * * *`;
+
+      cron.schedule(
+        expr,
+        async () => {
+          try {
+            await sendDailyVideos(bot);
+          } catch (error) {
+            console.error('Error in scheduleDaily:', error);
+          }
+        },
+        { timezone: TIMEZONE }
+      );
+    }
+  } else {
+    cron.schedule(
+      '0 9 * * *',
+      async () => {
+        try {
+          await sendDailyVideos(bot);
+        } catch (error) {
+          console.error('Error in scheduleDaily:', error);
+        }
+      },
+      { timezone: TIMEZONE }
+    );
+  }
 
   // Motivation messages per course (optional, using static config)
   for (const course of COURSES) {

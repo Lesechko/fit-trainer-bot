@@ -17,6 +17,7 @@ export const healthyJoints = {
   slug: 'healthy-joints',
   title: 'Здорові суглоби',
   days: 10,
+  dailyTime: '19:00',
   welcome: WELCOME_MESSAGE,
   motivation: {
     time: '09:00',
