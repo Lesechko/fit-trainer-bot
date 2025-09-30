@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { ADMIN_ID, DATABASE_URL } from './config';
-import { WhitelistRow, UserDayRow, UserRow } from './types';
+import { WhitelistRow, UserDayRow, UserRow, VideoRow } from './types';
 
 export const db = new Pool({
   connectionString: DATABASE_URL,
@@ -26,6 +26,16 @@ export async function initializeSchema(): Promise<void> {
       )
     `);
 
+    // Create videos table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS videos (
+        id SERIAL PRIMARY KEY,
+        day INTEGER UNIQUE NOT NULL,
+        file_id TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Add admin to whitelist if specified
     if (ADMIN_ID) {
       await db.query(
@@ -41,5 +51,5 @@ export async function initializeSchema(): Promise<void> {
   }
 }
 
-export type { WhitelistRow, UserDayRow, UserRow };
+export type { WhitelistRow, UserDayRow, UserRow, VideoRow };
 

@@ -41,6 +41,8 @@ export const listUsers = (list: string) => `📋 Whitelist:\n${list}`;
 
 // Media upload
 export const VIDEO_RECEIVED = '✅ Отримав file_id, перевір консоль';
+export const videoFileId = (fileId: string) =>
+  `📂 file_id:\n<code>${fileId}</code>\n\nСкопіюй та використай: /addvideo <день> ${fileId}`;
 
 // Admin commands
 export const SEND_DAILY_START = '⏰ Надсилаю щоденні відео...';
@@ -49,4 +51,25 @@ export const SEND_DAILY_ERROR = '⚠️ Помилка при надсиланн
 
 export const USERS_ERROR = '⚠️ Помилка при отриманні списку користувачів';
 export const USERS_EMPTY = '📂 Немає зареєстрованих користувачів';
-export const usersList = (list: string) => `👥 Користувачі та їх прогрес:\n${list}`;
+export const usersList = (list: string) =>
+  `👥 Користувачі та їх прогрес:\n${list}`;
+
+// Video management
+export const ADDVIDEO_USAGE = '⚠️ Використай так: /addvideo <день> <file_id>';
+export const ADDVIDEO_BAD_DAY = '⚠️ Некоректний номер дня (1-10)';
+export const ADDVIDEO_ERROR = '⚠️ Помилка при додаванні відео';
+export const ADDVIDEO_SUCCESS = (day: number) =>
+  `✅ Відео для дня ${day} додано`;
+export const ADDVIDEO_EXISTS = (day: number) =>
+  `⚠️ Відео для дня ${day} вже існує`;
+
+export const LISTVIDEOS_ERROR = '⚠️ Помилка при отриманні списку відео';
+export const LISTVIDEOS_EMPTY = '📂 Немає доданих відео';
+export const listVideos = (list: string) => `🎥 Відео в базі:\n${list}`;
+
+export const DELVIDEO_USAGE = '⚠️ Використай так: /delvideo <день>';
+export const DELVIDEO_ERROR = '⚠️ Помилка при видаленні відео';
+export const DELVIDEO_SUCCESS = (day: number) =>
+  `✅ Відео для дня ${day} видалено`;
+export const DELVIDEO_NOT_FOUND = (day: number) =>
+  `⚠️ Відео для дня ${day} не знайдено`;
