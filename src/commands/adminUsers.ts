@@ -16,10 +16,77 @@ import {
   SYNC_COURSES_ERROR,
   CONTEXT_NOT_SET,
   CONTEXT_CURRENT,
+  USERS_ERROR,
+  USERS_EMPTY,
+  usersList,
 } from '../messages';
-import { ensureFromAndAdmin, getCommandParts } from './helpers';
+import { ensureFromAndAdmin, getCommandParts, getAdminCourseContext } from './helpers';
 import { COURSES } from '../config';
+import { formatUserDisplayName, calculateUserProgress } from '../utils';
 
+export async function listUsersCommandCallback(ctx: Context) {
+  if (!ensureFromAndAdmin(ctx)) return;
+
+  try {
+    const adminContext = await getAdminCourseContext(ctx.from!.id);
+    
+    if (!adminContext?.course_id) {
+      return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
+    }
+
+    const res: any = await db.query(`
+      SELECT 
+        u.telegram_id, 
+        u.username,
+        u.first_name,
+        u.last_name,
+        u.language_code,
+        uc.start_date, 
+        uc.created_at as enrolled_at,
+        c.title as course_title,
+        c.slug as course_slug
+      FROM users u 
+      JOIN user_courses uc ON u.id = uc.user_id 
+      JOIN courses c ON c.id = uc.course_id
+      WHERE uc.course_id = $1
+      ORDER BY uc.created_at DESC
+    `, [adminContext.course_id]);
+    
+    const users = res.rows as { 
+      telegram_id: number; 
+      username: string | null;
+      first_name: string | null;
+      last_name: string | null;
+      language_code: string | null;
+      start_date: string; 
+      enrolled_at: string;
+      course_title: string;
+      course_slug: string;
+    }[];
+
+    if (users.length === 0) {
+      return ctx.reply(USERS_EMPTY);
+    }
+
+    // Get course config for days count
+    const courseConfig = COURSES.find(c => c.slug === users[0]?.course_slug);
+    const courseDays = courseConfig?.days || 10; // fallback to 10 days
+
+    // Format users list
+    const list = users.map(u => {
+      const { status } = calculateUserProgress(u.start_date, courseDays);
+      const enrolledDate = new Date(u.enrolled_at).toLocaleDateString('uk-UA');
+      const displayName = formatUserDisplayName(u);
+      
+      return `👤 ${displayName} (${u.telegram_id}) | ${status} | Почав: ${u.start_date} | Зареєстрований: ${enrolledDate}`;
+    }).join('\n');
+    
+    return ctx.reply(usersList(list));
+  } catch (e) {
+    console.error(e);
+    return ctx.reply(USERS_ERROR);
+  }
+}
 
 export async function genAccessCodeCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx)) return;

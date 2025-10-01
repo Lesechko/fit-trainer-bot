@@ -96,8 +96,24 @@ async function redeemWithCode(ctx: Context, code: string) {
   try {
     // Ensure user exists and fetch internal user id
     const userRes: any = await db.query(
-      'INSERT INTO users (telegram_id, start_date) VALUES ($1, $2) ON CONFLICT (telegram_id) DO UPDATE SET telegram_id = EXCLUDED.telegram_id RETURNING id',
-      [telegramId, new Date().toISOString().split('T')[0]]
+      `INSERT INTO users (telegram_id, username, first_name, last_name, language_code, start_date, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       ON CONFLICT (telegram_id) DO UPDATE SET 
+         username = EXCLUDED.username,
+         first_name = EXCLUDED.first_name,
+         last_name = EXCLUDED.last_name,
+         language_code = EXCLUDED.language_code,
+         updated_at = EXCLUDED.updated_at
+       RETURNING id`,
+      [
+        telegramId, 
+        ctx.from!.username || null,
+        ctx.from!.first_name || null,
+        ctx.from!.last_name || null,
+        ctx.from!.language_code || null,
+        new Date().toISOString().split('T')[0],
+        new Date().toISOString()
+      ]
     );
     const userId: number = userRes.rows[0].id;
 

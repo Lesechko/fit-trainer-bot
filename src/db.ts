@@ -17,8 +17,14 @@ export async function initializeSchema(): Promise<void> {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         telegram_id INTEGER UNIQUE,
+        username TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        language_code TEXT,
         start_date TEXT,
-        day INTEGER DEFAULT 1
+        day INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 

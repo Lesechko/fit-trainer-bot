@@ -79,4 +79,38 @@ export function isAdmin(ctx: Context | undefined | null): boolean {
   return Boolean(ADMIN_ID && ctx && (ctx as any).from && (ctx as any).from.id === ADMIN_ID);
 }
 
+export function formatUserDisplayName(user: {
+  telegram_id: number;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+}): string {
+  if (user.first_name) {
+    let displayName = user.first_name;
+    if (user.last_name) displayName += ` ${user.last_name}`;
+    return displayName;
+  } else if (user.username) {
+    return `@${user.username}`;
+  } else {
+    return `ID:${user.telegram_id}`;
+  }
+}
+
+export function calculateUserProgress(startDate: string, courseDays: number): {
+  currentDay: number;
+  isCompleted: boolean;
+  status: string;
+} {
+  const start = new Date(startDate);
+  const now = new Date();
+  const diffTime = now.getTime() - start.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  const currentDay = Math.max(1, Math.min(diffDays, courseDays));
+  const isCompleted = diffDays > courseDays;
+  
+  const status = isCompleted ? '✅ Завершено' : `📅 День ${currentDay}/${courseDays}`;
+  
+  return { currentDay, isCompleted, status };
+}
+
 

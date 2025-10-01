@@ -1,7 +1,6 @@
 import { Context } from 'telegraf';
 import { CourseVideoRow } from '../types';
 import {
-  ADMIN_ONLY_LIST,
   LISTVIDEOS_ERROR,
   LISTVIDEOS_EMPTY,
   listVideos,
@@ -38,7 +37,7 @@ export function videoUploadCallback(ctx: Context) {
 }
 
 export async function listVideosCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   try {
     const adminContext = await getAdminCourseContext(ctx.from!.id);
@@ -67,7 +66,7 @@ export async function listVideosCommandCallback(ctx: Context) {
 }
 
 export async function addVideoCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
   if (parts.length !== 3) {
@@ -104,7 +103,7 @@ export async function addVideoCommandCallback(ctx: Context) {
 }
 
 export async function delVideoCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
   if (parts.length !== 2) {
@@ -140,7 +139,7 @@ export async function delVideoCommandCallback(ctx: Context) {
 }
 
 export async function sendVideoBroadcastCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
   if (parts.length !== 2) {

@@ -7,6 +7,7 @@ import {
 } from './commands/user';
 import {
   genAccessCodeCommandCallback,
+  listUsersCommandCallback,
   listCoursesCommandCallback,
   setCourseContextCommandCallback,
   syncCoursesFromConfigCommandCallback,
@@ -31,6 +32,7 @@ export function registerCommands(bot: Telegraf<Context>) {
 
   // Admin course management
   bot.command('genaccess', genAccessCodeCommandCallback);
+  bot.command('listusers', listUsersCommandCallback);
   bot.command('courses', listCoursesCommandCallback);
   bot.command('setcourse', setCourseContextCommandCallback);
   bot.command('synccourses', syncCoursesFromConfigCommandCallback);
