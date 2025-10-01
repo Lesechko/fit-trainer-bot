@@ -13,15 +13,6 @@ export type UserRow = {
 
 export type UserDayRow = Pick<UserRow, 'day'>;
 
-export type WhitelistRow = { telegram_id: number };
-
-export type VideoRow = {
-  id: number;
-  day: number;
-  file_id: string;
-  created_at: string;
-};
-
 // Multi-course types
 export type CourseRow = {
   id: number;

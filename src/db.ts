@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
-import { ADMIN_ID, DATABASE_URL } from './config';
-import { WhitelistRow, UserDayRow, UserRow, VideoRow } from './types';
+import { DATABASE_URL } from './config';
+import { UserDayRow, UserRow } from './types';
 
 export const db = new Pool({
   connectionString: DATABASE_URL,
@@ -28,22 +28,14 @@ export async function initializeSchema(): Promise<void> {
       )
     `);
 
-    // Create whitelist table (global)
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS whitelist (
-        telegram_id INTEGER UNIQUE
-      )
-    `);
-
-    // Legacy single-course videos table (kept for compatibility)
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS videos (
-        id SERIAL PRIMARY KEY,
-        day INTEGER UNIQUE NOT NULL,
-        file_id TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Clean up legacy tables that are no longer needed
+    try {
+      await db.query('DROP TABLE IF EXISTS whitelist CASCADE');
+      await db.query('DROP TABLE IF EXISTS videos CASCADE');
+      console.log('✅ Legacy tables cleaned up');
+    } catch (cleanupError) {
+      console.log('ℹ️ Legacy table cleanup skipped (tables may not exist)');
+    }
 
     // --- Multi-course schema ---
     await db.query(`
@@ -100,12 +92,23 @@ export async function initializeSchema(): Promise<void> {
       )
     `);
 
-    // Add admin to whitelist if specified
-    if (ADMIN_ID) {
-      await db.query(
-        'INSERT INTO whitelist (telegram_id) VALUES ($1) ON CONFLICT (telegram_id) DO NOTHING',
-        [ADMIN_ID]
-      );
+    // Note: Admin access is now handled by ADMIN_ID check in utils.ts
+    // No need to maintain a whitelist table
+
+    // Migrate existing users table to add new columns
+    try {
+      await db.query(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS username TEXT,
+        ADD COLUMN IF NOT EXISTS first_name TEXT,
+        ADD COLUMN IF NOT EXISTS last_name TEXT,
+        ADD COLUMN IF NOT EXISTS language_code TEXT,
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      `);
+      console.log('✅ Users table migration completed');
+    } catch (migrationError) {
+      console.log('ℹ️ Users table migration skipped (columns may already exist)');
     }
 
     console.log('✅ Database schema initialized successfully');
@@ -115,4 +118,4 @@ export async function initializeSchema(): Promise<void> {
   }
 }
 
-export type { WhitelistRow, UserDayRow, UserRow, VideoRow };
+export type { UserDayRow, UserRow };

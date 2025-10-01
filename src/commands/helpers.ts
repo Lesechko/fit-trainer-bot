@@ -1,6 +1,6 @@
 import { Context } from 'telegraf';
 import { isAdmin } from '../utils';
-import { VideoRow, AdminContextRow } from '../types';
+import { AdminContextRow } from '../types';
 import { db } from '../db';
 
 export function ensureFromAndAdmin(ctx: Context): boolean {
@@ -23,12 +23,6 @@ export function getCommandParts(ctx: Context): string[] {
 
 export function isValidDay(num: number): boolean {
   return Number.isFinite(num) && num >= 1 && num <= 10;
-}
-
-export function formatVideosList(rows: VideoRow[]): string {
-  return rows
-    .map((r) => `День ${r.day}: ${r.file_id.substring(0, 20)}...`)
-    .join('\n');
 }
 
 export async function getAdminCourseContext(
