@@ -75,10 +75,18 @@ export async function listUsersCommandCallback(ctx: Context) {
     // Format users list
     const list = users.map(u => {
       const { status } = calculateUserProgress(u.start_date, courseDays);
-      const enrolledDate = new Date(u.enrolled_at).toLocaleDateString('uk-UA');
       const displayName = formatUserDisplayName(u);
       
-      return `👤 ${displayName} (${u.telegram_id}) | ${status} | Почав: ${u.start_date} | Зареєстрований: ${enrolledDate}`;
+      // Debug: log user data to see what we're getting
+      console.log('User data:', {
+        telegram_id: u.telegram_id,
+        username: u.username,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        displayName
+      });
+      
+      return `👤 ${displayName} (${u.telegram_id}) | ${status} | Почав: ${u.start_date}`;
     }).join('\n');
     
     return ctx.reply(usersList(list));
