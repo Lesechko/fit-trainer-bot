@@ -10,7 +10,7 @@ import {
   START_ASK_CODE,
 } from '../messages';
 import { COURSES } from '../config';
-import { calculateProgramDay } from '../utils';
+import { calculateProgramDay, getEnrollmentStartDateForCourse } from '../utils';
 
 export function startCommandCallback(ctx: Context) {
   if (!ctx.from) {
@@ -147,8 +147,8 @@ async function redeemWithCode(ctx: Context, code: string) {
       return ctx.reply(REDEEM_INVALID);
     }
 
-    // Enroll user
-    const startDate = new Date().toISOString().split('T')[0];
+    // Enroll user with start date anchored to course daily send time
+    const startDate = getEnrollmentStartDateForCourse(row.slug);
 
     await db.query(
       'INSERT INTO user_courses (user_id, course_id, start_date) VALUES ($1, $2, $3) ON CONFLICT (user_id, course_id) DO NOTHING',

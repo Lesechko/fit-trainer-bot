@@ -12,6 +12,7 @@ import {
   setCourseContextCommandCallback,
   syncCoursesFromConfigCommandCallback,
   contextCommandCallback,
+  removeUserCommandCallback,
 } from './commands/adminUsers';
 import {
   videoUploadCallback,
@@ -33,6 +34,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   // Admin course management
   bot.command('genaccess', genAccessCodeCommandCallback);
   bot.command('listusers', listUsersCommandCallback);
+  bot.command('removeuser', removeUserCommandCallback);
   bot.command('courses', listCoursesCommandCallback);
   bot.command('setcourse', setCourseContextCommandCallback);
   bot.command('synccourses', syncCoursesFromConfigCommandCallback);

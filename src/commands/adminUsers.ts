@@ -19,6 +19,10 @@ import {
   USERS_ERROR,
   USERS_EMPTY,
   usersList,
+  REMOVEUSER_USAGE,
+  REMOVEUSER_ERROR,
+  REMOVEUSER_SUCCESS,
+  REMOVEUSER_NOT_FOUND,
 } from '../messages';
 import { ensureFromAndAdmin, getCommandParts, getAdminCourseContext } from './helpers';
 import { COURSES } from '../config';
@@ -248,5 +252,52 @@ export async function contextCommandCallback(ctx: Context) {
   } catch (e) {
     console.error(e);
     return ctx.reply(CONTEXT_NOT_SET);
+  }
+}
+
+export async function removeUserCommandCallback(ctx: Context) {
+  if (!ensureFromAndAdmin(ctx)) return;
+
+  const parts = getCommandParts(ctx);
+  if (parts.length !== 2) {
+    return ctx.reply(REMOVEUSER_USAGE);
+  }
+
+  const telegramId = Number(parts[1]);
+  if (!Number.isFinite(telegramId)) {
+    return ctx.reply(REMOVEUSER_USAGE);
+  }
+
+  try {
+    const adminContext = await getAdminCourseContext(ctx.from!.id);
+    
+    if (!adminContext?.course_id) {
+      return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
+    }
+
+    // Check if user exists in the current course
+    const userRes: any = await db.query(`
+      SELECT u.id, u.telegram_id, c.title as course_title
+      FROM users u 
+      JOIN user_courses uc ON u.id = uc.user_id 
+      JOIN courses c ON c.id = uc.course_id
+      WHERE u.telegram_id = $1 AND uc.course_id = $2
+    `, [telegramId, adminContext.course_id]);
+
+    const user = userRes.rows[0];
+    if (!user) {
+      return ctx.reply(REMOVEUSER_NOT_FOUND(telegramId));
+    }
+
+    // Remove user from course
+    await db.query(
+      'DELETE FROM user_courses WHERE user_id = $1 AND course_id = $2',
+      [user.id, adminContext.course_id]
+    );
+
+    return ctx.reply(REMOVEUSER_SUCCESS(telegramId, user.course_title));
+  } catch (e) {
+    console.error(e);
+    return ctx.reply(REMOVEUSER_ERROR);
   }
 }
