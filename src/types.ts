@@ -53,6 +53,13 @@ export type CourseAccessCodeRow = {
   used_at: string | null;
 };
 
+export type AdminContextRow = {
+  telegram_id: number;
+  course_id: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // Static config for hardcoded courses in code
 export type CourseStaticConfig = {
   slug: string;

@@ -16,9 +16,6 @@ import {
   GENACCESS_ERROR,
   GENACCESS_CODE,
   GENACCESS_LINK,
-  CREATECOURSE_USAGE,
-  CREATECOURSE_OK,
-  CREATECOURSE_ERROR,
   COURSES_EMPTY,
   listCourses,
   SETCOURSE_USAGE,
@@ -119,25 +116,6 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
   }
 }
 
-export async function createCourseCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
-
-  const parts = getCommandParts(ctx);
-  if (parts.length < 3) {
-    return ctx.reply(CREATECOURSE_USAGE);
-  }
-
-  const slug = parts[1];
-  const title = parts.slice(2).join(' ');
-
-  try {
-    await db.query('INSERT INTO courses (slug, title) VALUES ($1, $2)', [slug, title]);
-    return ctx.reply(CREATECOURSE_OK(slug));
-  } catch (e) {
-    console.error(e);
-    return ctx.reply(CREATECOURSE_ERROR);
-  }
-}
 
 export async function listCoursesCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;

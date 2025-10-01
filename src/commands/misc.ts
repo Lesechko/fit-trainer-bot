@@ -1,5 +1,5 @@
 import { Context, Telegraf } from 'telegraf';
-import { SEND_DAILY_START, SEND_DAILY_COMPLETE, SEND_DAILY_ERROR, ADMIN_ONLY_LIST } from '../messages';
+import { SEND_DAILY_START, SEND_DAILY_COMPLETE, SEND_DAILY_ERROR } from '../messages';
 import { isAdmin, sendDailyVideos } from '../utils';
 
 export function sendDailyCommandCallback(bot: Telegraf<Context>) {
@@ -9,7 +9,7 @@ export function sendDailyCommandCallback(bot: Telegraf<Context>) {
     }
     
     if (!isAdmin(ctx)) {
-      return ctx.reply(ADMIN_ONLY_LIST);
+      return;
     }
 
     await ctx.reply(SEND_DAILY_START);

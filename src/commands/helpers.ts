@@ -1,6 +1,7 @@
 import { Context } from 'telegraf';
 import { isAdmin } from '../utils';
-import { VideoRow } from '../types';
+import { VideoRow, AdminContextRow } from '../types';
+import { db } from '../db';
 
 export function ensureFromAndAdmin(ctx: Context, notAdminMsg: string): boolean {
   if (!ctx.from) {
@@ -8,7 +9,7 @@ export function ensureFromAndAdmin(ctx: Context, notAdminMsg: string): boolean {
   }
 
   if (!isAdmin(ctx)) {
-    ctx.reply(notAdminMsg);
+    // Don't reply to non-admin users - they shouldn't know about admin commands
     return false;
   }
 
@@ -29,4 +30,14 @@ export function formatVideosList(rows: VideoRow[]): string {
   return rows
     .map((r) => `День ${r.day}: ${r.file_id.substring(0, 20)}...`)
     .join('\n');
+}
+
+export async function getAdminCourseContext(telegramId: number): Promise<AdminContextRow | null> {
+  try {
+    const res = await db.query('SELECT * FROM admin_context WHERE telegram_id = $1', [telegramId]);
+    return res.rows[0] || null;
+  } catch (e) {
+    console.error('Error getting admin context:', e);
+    return null;
+  }
 }
