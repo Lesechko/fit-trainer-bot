@@ -77,15 +77,6 @@ export async function listUsersCommandCallback(ctx: Context) {
       const { status } = calculateUserProgress(u.start_date, courseDays);
       const displayName = formatUserDisplayName(u);
       
-      // Debug: log user data to see what we're getting
-      console.log('User data:', {
-        telegram_id: u.telegram_id,
-        username: u.username,
-        first_name: u.first_name,
-        last_name: u.last_name,
-        displayName
-      });
-      
       return `👤 ${displayName} (${u.telegram_id}) | ${status} | Почав: ${u.start_date}`;
     }).join('\n');
     
