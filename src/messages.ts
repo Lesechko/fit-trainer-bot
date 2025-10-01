@@ -84,7 +84,7 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 /sendvideo <file_id> — надіслати відео всім користувачам поточного курсу
 
 *Коди доступу:*
-/genaccess <course_slug> [expires_days] — згенерувати код доступу
+/genaccess [expires_days] — згенерувати код доступу для поточного курсу
 
 *Інше:*
 /senddaily — надіслати щоденні відео вручну
@@ -92,7 +92,7 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 
 // Access codes
 export const GENACCESS_USAGE =
-  '⚠️ Використай: /genaccess <course_slug> [expires_days]';
+  '⚠️ Використай: /genaccess [expires_days]';
 export const GENACCESS_CREATED = (
   slug: string,
   _code: string,

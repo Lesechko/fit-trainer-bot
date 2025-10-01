@@ -82,18 +82,21 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
 
   const parts = getCommandParts(ctx);
-  if (parts.length < 2 || parts.length > 3) {
+  if (parts.length > 2) {
     return ctx.reply(GENACCESS_USAGE);
   }
 
-  const slug = parts[1];
-  const expiresDays = parts[2] ? Number(parts[2]) : NaN;
+  const expiresDays = parts[1] ? Number(parts[1]) : NaN;
 
   try {
-    const courseRes: any = await db.query('SELECT id, slug FROM courses WHERE slug = $1', [slug]);
-    const course = courseRes.rows[0];
+    // Get current course context
+    const contextRes: any = await db.query(
+      'SELECT c.id, c.slug FROM admin_context ac JOIN courses c ON c.id = ac.course_id WHERE ac.telegram_id = $1',
+      [ctx.from!.id]
+    );
+    const course = contextRes.rows[0];
     if (!course) {
-      return ctx.reply(GENACCESS_ERROR);
+      return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
     }
 
     const code = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
@@ -106,7 +109,7 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
       [code, course.id, ctx.from!.id, expiresAt ? expiresAt.toISOString() : null]
     );
 
-    await ctx.reply(GENACCESS_CREATED(slug, code, expiresAt ? expiresAt.toISOString().split('T')[0] : null));
+    await ctx.reply(GENACCESS_CREATED(course.slug, code, expiresAt ? expiresAt.toISOString().split('T')[0] : null));
     await ctx.reply(GENACCESS_CODE(code));
     if (process.env.BOT_USERNAME) {
       const link = `https://t.me/${process.env.BOT_USERNAME}?start=${code}`;
