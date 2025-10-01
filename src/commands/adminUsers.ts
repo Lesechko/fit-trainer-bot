@@ -18,11 +18,14 @@ import {
   GENACCESS_LINK,
   COURSES_EMPTY,
   listCourses,
+  listCourseSlugs,
   SETCOURSE_USAGE,
   SETCOURSE_OK,
   SYNC_COURSES_START,
   SYNC_COURSES_DONE,
   SYNC_COURSES_ERROR,
+  CONTEXT_NOT_SET,
+  CONTEXT_CURRENT,
 } from '../messages';
 import { isAdmin } from '../utils';
 import { ensureFromAndAdmin, getCommandParts } from './helpers';
@@ -127,7 +130,9 @@ export async function listCoursesCommandCallback(ctx: Context) {
       return ctx.reply(COURSES_EMPTY);
     }
     const list = rows.map((r) => `${r.slug} — ${r.title}${r.is_active ? '' : ' (inactive)'}`).join('\n');
-    return ctx.reply(listCourses(list));
+    const slugList = rows.map((r) => r.slug).join('\n');
+    await ctx.reply(listCourses(list));
+    return ctx.reply(listCourseSlugs(slugList));
   } catch (e) {
     console.error(e);
     return ctx.reply(COURSES_EMPTY);
@@ -175,6 +180,26 @@ export async function syncCoursesFromConfigCommandCallback(ctx: Context) {
   } catch (e) {
     console.error(e);
     return ctx.reply(SYNC_COURSES_ERROR);
+  }
+}
+
+
+export async function contextCommandCallback(ctx: Context) {
+  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+
+  try {
+    const res: any = await db.query(
+      'SELECT c.slug, c.title FROM admin_context ac JOIN courses c ON c.id = ac.course_id WHERE ac.telegram_id = $1',
+      [ctx.from!.id]
+    );
+    const row = res.rows[0] as { slug: string; title: string } | undefined;
+    if (!row) {
+      return ctx.reply(CONTEXT_NOT_SET);
+    }
+    return ctx.reply(CONTEXT_CURRENT(row.slug, row.title));
+  } catch (e) {
+    console.error(e);
+    return ctx.reply(CONTEXT_NOT_SET);
   }
 }
 

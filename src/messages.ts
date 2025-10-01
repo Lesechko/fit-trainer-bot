@@ -120,6 +120,7 @@ export const START_ASK_CODE =
 export const COURSE_NOT_FOUND = '⚠️ Курс не знайдено';
 export const COURSES_EMPTY = '📂 Наразі курсів немає';
 export const listCourses = (list: string) => `🎓 Курси:\n${list}`;
+export const listCourseSlugs = (list: string) => `🔖 Слаги курсів:\n${list}`;
 
 export const CREATECOURSE_USAGE = '⚠️ Використай: /createcourse <slug> <title>';
 export const CREATECOURSE_OK = (slug: string) => `✅ Курс ${slug} створено`;
@@ -133,3 +134,7 @@ export const SETCOURSE_OK = (slug: string) =>
 export const SYNC_COURSES_START = '🔄 Синхронізую курси з конфігурації...';
 export const SYNC_COURSES_DONE = '✅ Курси синхронізовано';
 export const SYNC_COURSES_ERROR = '⚠️ Не вдалося синхронізувати курси';
+
+// Admin context
+export const CONTEXT_NOT_SET = 'ℹ️ Поточний курс не встановлено. Використай /setcourse <slug>';
+export const CONTEXT_CURRENT = (slug: string, title: string) => `🧭 Поточний курс: ${slug} — ${title}`;

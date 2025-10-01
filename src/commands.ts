@@ -12,6 +12,7 @@ import {
   listCoursesCommandCallback,
   setCourseContextCommandCallback,
   syncCoursesFromConfigCommandCallback,
+  contextCommandCallback,
 } from './commands/adminUsers';
 import {
   videoUploadCallback,
@@ -37,6 +38,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.command('courses', listCoursesCommandCallback);
   bot.command('setcourse', setCourseContextCommandCallback);
   bot.command('synccourses', syncCoursesFromConfigCommandCallback);
+  bot.command('context', contextCommandCallback);
 
   // Video management commands
   bot.on(message('video'), videoUploadCallback);
