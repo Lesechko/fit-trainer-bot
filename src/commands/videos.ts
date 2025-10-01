@@ -1,5 +1,5 @@
-import { Context, Telegraf } from 'telegraf';
-import { VideoRow, CourseVideoRow } from '../types';
+import { Context } from 'telegraf';
+import { CourseVideoRow } from '../types';
 import {
   ADMIN_ONLY_LIST,
   LISTVIDEOS_ERROR,
@@ -18,7 +18,6 @@ import {
   SENDVIDEO_START,
   SENDVIDEO_DONE,
   SENDVIDEO_ERROR,
-  COURSE_NOT_FOUND,
 } from '../messages';
 import { isAdmin } from '../utils';
 import { db } from '../db';
@@ -26,7 +25,6 @@ import {
   ensureFromAndAdmin,
   getCommandParts,
   isValidDay,
-  formatVideosList,
   getAdminCourseContext,
 } from './helpers';
 
@@ -58,7 +56,9 @@ export async function listVideosCommandCallback(ctx: Context) {
       return ctx.reply(LISTVIDEOS_EMPTY);
     }
 
-    const list = rows.map((r) => `День ${r.day}: ${r.file_id.substring(0, 20)}...`).join('\n');
+    const list = rows
+      .map((r) => `День ${r.day}: ${r.file_id.substring(0, 20)}...`)
+      .join('\n');
     return ctx.reply(listVideos(list));
   } catch (err) {
     console.error(err);

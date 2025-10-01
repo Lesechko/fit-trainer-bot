@@ -72,6 +72,10 @@ export type CourseStaticConfig = {
     time: string; // '09:00' in TIMEZONE
     messages: string[];
   };
+  // Video titles for each day (index 0 = day 1, etc.) - sent as video caption
+  videoTitles?: string[];
+  // Detailed descriptions for each day's video (index 0 = day 1, etc.) - sent as separate message
+  videoDescriptions?: string[];
 };
 
 // (duplicate removed)

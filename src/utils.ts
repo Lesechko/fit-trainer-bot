@@ -20,6 +20,11 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
     const courses = courseRows.rows as { id: number; slug: string }[];
 
     for (const course of courses) {
+      // Find course config
+      const courseConfig = COURSES.find(c => c.slug === course.slug);
+      
+      if (!courseConfig) continue;
+
       // users enrolled to this course with start_date
       const ucRes: any = await db.query(
         'SELECT u.telegram_id, uc.start_date FROM user_courses uc JOIN users u ON u.id = uc.user_id WHERE uc.course_id = $1',
@@ -40,8 +45,23 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
         const video = videos.find((v) => v.day === day);
         if (!video) return Promise.resolve();
 
+        // Send video with title as caption
+        const videoTitle = courseConfig.videoTitles && courseConfig.videoTitles[day - 1] 
+          ? courseConfig.videoTitles[day - 1] 
+          : dayCaption(day);
+
         return bot.telegram
-          .sendVideo(user.telegram_id, video.file_id, { caption: dayCaption(day) })
+          .sendVideo(user.telegram_id, video.file_id, { caption: videoTitle })
+          .then(() => {
+            // Send video description if available
+            if (courseConfig.videoDescriptions && courseConfig.videoDescriptions[day - 1]) {
+              return bot.telegram
+                .sendMessage(user.telegram_id, courseConfig.videoDescriptions[day - 1])
+                .catch((descErr: Error) => {
+                  console.error(`Помилка надсилання опису ${user.telegram_id}:`, descErr.message);
+                });
+            }
+          })
           .catch((sendErr: Error) => {
             console.error(`Помилка надсилання ${user.telegram_id}:`, sendErr.message);
           });

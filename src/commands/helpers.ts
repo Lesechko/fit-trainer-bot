@@ -3,13 +3,12 @@ import { isAdmin } from '../utils';
 import { VideoRow, AdminContextRow } from '../types';
 import { db } from '../db';
 
-export function ensureFromAndAdmin(ctx: Context, notAdminMsg: string): boolean {
+export function ensureFromAndAdmin(ctx: Context): boolean {
   if (!ctx.from) {
     return false;
   }
 
   if (!isAdmin(ctx)) {
-    // Don't reply to non-admin users - they shouldn't know about admin commands
     return false;
   }
 
@@ -32,9 +31,14 @@ export function formatVideosList(rows: VideoRow[]): string {
     .join('\n');
 }
 
-export async function getAdminCourseContext(telegramId: number): Promise<AdminContextRow | null> {
+export async function getAdminCourseContext(
+  telegramId: number
+): Promise<AdminContextRow | null> {
   try {
-    const res = await db.query('SELECT * FROM admin_context WHERE telegram_id = $1', [telegramId]);
+    const res = await db.query(
+      'SELECT * FROM admin_context WHERE telegram_id = $1',
+      [telegramId]
+    );
     return res.rows[0] || null;
   } catch (e) {
     console.error('Error getting admin context:', e);

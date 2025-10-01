@@ -26,7 +26,6 @@ export const DATABASE_URL: string = (() => {
   return url;
 })();
 
-
 export const BOT_USERNAME = process.env.BOT_USERNAME || '';
 
 export const COURSES: CourseStaticConfig[] = [healthyJoints];

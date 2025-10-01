@@ -49,7 +49,8 @@ export const ADDVIDEO_EXISTS = (day: number) =>
 
 export const LISTVIDEOS_ERROR = '⚠️ Помилка при отриманні списку відео';
 export const LISTVIDEOS_EMPTY = '📂 Немає доданих відео для поточного курсу';
-export const listVideos = (list: string) => `🎥 Відео в поточному курсі:\n${list}`;
+export const listVideos = (list: string) =>
+  `🎥 Відео в поточному курсі:\n${list}`;
 
 export const DELVIDEO_USAGE = '⚠️ Використай так: /delvideo <день>';
 export const DELVIDEO_ERROR = '⚠️ Помилка при видаленні відео';
@@ -60,7 +61,8 @@ export const DELVIDEO_NOT_FOUND = (day: number) =>
 
 // Broadcast
 export const SENDVIDEO_USAGE = '⚠️ Використай так: /sendvideo <file_id>';
-export const SENDVIDEO_START = '📣 Надсилаю відео всім користувачам поточного курсу...';
+export const SENDVIDEO_START =
+  '📣 Надсилаю відео всім користувачам поточного курсу...';
 export const SENDVIDEO_DONE = (count: number) =>
   `✅ Відео надіслано ${count} користувачам поточного курсу`;
 export const SENDVIDEO_ERROR = '⚠️ Помилка при розсилці відео';
@@ -68,13 +70,10 @@ export const SENDVIDEO_ERROR = '⚠️ Помилка при розсилці в
 // Admin help
 export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 
-*Управління користувачами:*
-/adduser <id> — додати користувача до whitelist
-/listusers — показати whitelist
-
 *Управління курсами:*
 /courses — список курсів
 /setcourse <slug> — встановити поточний курс (контекст адміна)
+/context — показати поточний курс
 /synccourses — синхронізувати курси з конфігурації
 
 *Управління відео (для поточного курсу):*
@@ -91,8 +90,7 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 /helpadmin — показати цю довідку`;
 
 // Access codes
-export const GENACCESS_USAGE =
-  '⚠️ Використай: /genaccess [expires_days]';
+export const GENACCESS_USAGE = '⚠️ Використай: /genaccess [expires_days]';
 export const GENACCESS_CREATED = (
   slug: string,
   _code: string,
@@ -109,6 +107,8 @@ export const GENACCESS_ERROR = '⚠️ Не вдалося створити ко
 export const REDEEM_USAGE = '⚠️ Використай: /redeem <code>';
 export const REDEEM_INVALID = '⚠️ Код недійсний або прострочений';
 export const REDEEM_USED = '⚠️ Код вже використано';
+export const REDEEM_ALREADY_ENROLLED = (courseName: string) =>
+  `⚠️ Ти вже зареєстрований на курс "${courseName}". Спочатку заверши поточний курс, щоб почати новий.`;
 export const REDEEM_OK = (slug: string) =>
   `✅ Тебе зараховано на курс: ${slug}!`;
 
@@ -136,5 +136,7 @@ export const SYNC_COURSES_DONE = '✅ Курси синхронізовано';
 export const SYNC_COURSES_ERROR = '⚠️ Не вдалося синхронізувати курси';
 
 // Admin context
-export const CONTEXT_NOT_SET = 'ℹ️ Поточний курс не встановлено. Використай /setcourse <slug>';
-export const CONTEXT_CURRENT = (slug: string, title: string) => `🧭 Поточний курс: ${slug} — ${title}`;
+export const CONTEXT_NOT_SET =
+  'ℹ️ Поточний курс не встановлено. Використай /setcourse <slug>';
+export const CONTEXT_CURRENT = (slug: string, title: string) =>
+  `🧭 Поточний курс: ${slug} — ${title}`;

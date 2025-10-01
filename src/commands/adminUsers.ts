@@ -1,16 +1,6 @@
-import { Context, Telegraf } from 'telegraf';
+import { Context } from 'telegraf';
 import { db } from '../db';
-import { WhitelistRow } from '../types';
 import {
-  ADMIN_ONLY_ADD,
-  ADMIN_ONLY_LIST,
-  ADDUSER_USAGE,
-  ADDUSER_BAD_ID,
-  ADDUSER_ERROR,
-  addUserOk,
-  LIST_ERROR,
-  LIST_EMPTY,
-  listUsers,
   GENACCESS_USAGE,
   GENACCESS_CREATED,
   GENACCESS_ERROR,
@@ -27,59 +17,12 @@ import {
   CONTEXT_NOT_SET,
   CONTEXT_CURRENT,
 } from '../messages';
-import { isAdmin } from '../utils';
 import { ensureFromAndAdmin, getCommandParts } from './helpers';
 import { COURSES } from '../config';
 
-export function addUserCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_ADD)) return;
-
-  const parts = getCommandParts(ctx);
-  if (parts.length !== 2) {
-    return ctx.reply(ADDUSER_USAGE);
-  }
-
-  const newUserId = Number(parts[1]);
-
-  if (!Number.isFinite(newUserId)) {
-    return ctx.reply(ADDUSER_BAD_ID);
-  }
-
-  db.query(
-    'INSERT INTO whitelist (telegram_id) VALUES ($1) ON CONFLICT (telegram_id) DO NOTHING',
-    [newUserId]
-  )
-    .then(() => {
-      ctx.reply(addUserOk(newUserId));
-    })
-    .catch((err: Error) => {
-      console.error(err);
-      ctx.reply(ADDUSER_ERROR);
-    });
-}
-
-export function listUsersCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
-
-  db.query('SELECT telegram_id FROM whitelist')
-    .then((result: any) => {
-      const rows = result.rows as WhitelistRow[];
-
-      if (!rows || rows.length === 0) {
-        return ctx.reply(LIST_EMPTY);
-      }
-      
-      const list = rows.map((r) => String(r.telegram_id)).join('\\n');
-      return ctx.reply(listUsers(list));
-    })
-    .catch((err: Error) => {
-      console.error(err);
-      ctx.reply(LIST_ERROR);
-    });
-}
 
 export async function genAccessCodeCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
   if (parts.length > 2) {
@@ -89,30 +32,46 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
   const expiresDays = parts[1] ? Number(parts[1]) : NaN;
 
   try {
-    // Get current course context
     const contextRes: any = await db.query(
       'SELECT c.id, c.slug FROM admin_context ac JOIN courses c ON c.id = ac.course_id WHERE ac.telegram_id = $1',
       [ctx.from!.id]
     );
+
     const course = contextRes.rows[0];
+
     if (!course) {
       return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
     }
 
-    const code = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+    const code =
+      Math.random().toString(36).slice(2, 10) +
+      Math.random().toString(36).slice(2, 6);
     const expiresAt = Number.isFinite(expiresDays)
       ? new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000)
       : null;
 
     await db.query(
       'INSERT INTO course_access_codes (code, course_id, created_by, expires_at) VALUES ($1, $2, $3, $4)',
-      [code, course.id, ctx.from!.id, expiresAt ? expiresAt.toISOString() : null]
+      [
+        code,
+        course.id,
+        ctx.from!.id,
+        expiresAt ? expiresAt.toISOString() : null,
+      ]
     );
 
-    await ctx.reply(GENACCESS_CREATED(course.slug, code, expiresAt ? expiresAt.toISOString().split('T')[0] : null));
+    await ctx.reply(
+      GENACCESS_CREATED(
+        course.slug,
+        code,
+        expiresAt ? expiresAt.toISOString().split('T')[0] : null
+      )
+    );
     await ctx.reply(GENACCESS_CODE(code));
+
     if (process.env.BOT_USERNAME) {
       const link = `https://t.me/${process.env.BOT_USERNAME}?start=${code}`;
+
       return ctx.reply(GENACCESS_LINK(link));
     }
     return;
@@ -122,19 +81,29 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
   }
 }
 
-
 export async function listCoursesCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   try {
-    const res: any = await db.query('SELECT slug, title, is_active FROM courses ORDER BY slug');
-    const rows = res.rows as { slug: string; title: string; is_active: boolean }[];
+    const res: any = await db.query(
+      'SELECT slug, title, is_active FROM courses ORDER BY slug'
+    );
+    const rows = res.rows as {
+      slug: string;
+      title: string;
+      is_active: boolean;
+    }[];
+
     if (!rows || rows.length === 0) {
       return ctx.reply(COURSES_EMPTY);
     }
-    const list = rows.map((r) => `${r.slug} — ${r.title}${r.is_active ? '' : ' (inactive)'}`).join('\n');
+
+    const list = rows
+      .map((r) => `${r.slug} — ${r.title}${r.is_active ? '' : ' (inactive)'}`)
+      .join('\n');
     const slugList = rows.map((r) => r.slug).join('\n');
     await ctx.reply(listCourses(list));
+
     return ctx.reply(listCourseSlugs(slugList));
   } catch (e) {
     console.error(e);
@@ -143,24 +112,32 @@ export async function listCoursesCommandCallback(ctx: Context) {
 }
 
 export async function setCourseContextCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
+
   if (parts.length !== 2) {
     return ctx.reply(SETCOURSE_USAGE);
   }
+
   const slug = parts[1];
 
   try {
-    const courseRes: any = await db.query('SELECT id FROM courses WHERE slug = $1', [slug]);
+    const courseRes: any = await db.query(
+      'SELECT id FROM courses WHERE slug = $1',
+      [slug]
+    );
     const course = courseRes.rows[0];
+
     if (!course) {
       return ctx.reply(SETCOURSE_USAGE);
     }
+
     await db.query(
       'INSERT INTO admin_context (telegram_id, course_id, updated_at) VALUES ($1, $2, $3) ON CONFLICT (telegram_id) DO UPDATE SET course_id = EXCLUDED.course_id, updated_at = EXCLUDED.updated_at',
       [ctx.from!.id, course.id, new Date().toISOString()]
     );
+
     return ctx.reply(SETCOURSE_OK(slug));
   } catch (e) {
     console.error(e);
@@ -169,7 +146,7 @@ export async function setCourseContextCommandCallback(ctx: Context) {
 }
 
 export async function syncCoursesFromConfigCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   try {
     await ctx.reply(SYNC_COURSES_START);
@@ -179,6 +156,7 @@ export async function syncCoursesFromConfigCommandCallback(ctx: Context) {
         [c.slug, c.title]
       );
     }
+
     return ctx.reply(SYNC_COURSES_DONE);
   } catch (e) {
     console.error(e);
@@ -186,9 +164,8 @@ export async function syncCoursesFromConfigCommandCallback(ctx: Context) {
   }
 }
 
-
 export async function contextCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx, ADMIN_ONLY_LIST)) return;
+  if (!ensureFromAndAdmin(ctx)) return;
 
   try {
     const res: any = await db.query(
@@ -196,15 +173,14 @@ export async function contextCommandCallback(ctx: Context) {
       [ctx.from!.id]
     );
     const row = res.rows[0] as { slug: string; title: string } | undefined;
+
     if (!row) {
       return ctx.reply(CONTEXT_NOT_SET);
     }
+
     return ctx.reply(CONTEXT_CURRENT(row.slug, row.title));
   } catch (e) {
     console.error(e);
     return ctx.reply(CONTEXT_NOT_SET);
   }
 }
-
-
-

@@ -4,7 +4,10 @@ import { WhitelistRow, UserDayRow, UserRow, VideoRow } from './types';
 
 export const db = new Pool({
   connectionString: DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
 });
 
 export async function initializeSchema(): Promise<void> {
@@ -107,4 +110,3 @@ export async function initializeSchema(): Promise<void> {
 }
 
 export type { WhitelistRow, UserDayRow, UserRow, VideoRow };
-

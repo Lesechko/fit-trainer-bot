@@ -6,8 +6,6 @@ import {
   redeemCommandCallback,
 } from './commands/user';
 import {
-  addUserCommandCallback,
-  listUsersCommandCallback,
   genAccessCodeCommandCallback,
   listCoursesCommandCallback,
   setCourseContextCommandCallback,
@@ -31,9 +29,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.command('day', dayCommandCallback);
   bot.command('redeem', redeemCommandCallback);
 
-  // Admin user management & courses
-  bot.command('adduser', addUserCommandCallback);
-  bot.command('listusers', listUsersCommandCallback);
+  // Admin course management
   bot.command('genaccess', genAccessCodeCommandCallback);
   bot.command('courses', listCoursesCommandCallback);
   bot.command('setcourse', setCourseContextCommandCallback);
