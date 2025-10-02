@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { Telegraf, Context } from 'telegraf';
 import { TIMEZONE, COURSES } from './config';
-import { sendDailyVideos } from './utils';
+import { sendDailyVideos, calculateProgramDay } from './utils';
 
 export function scheduleDaily(bot: Telegraf<Context>) {
   // If any course defines dailyTime, schedule per course; otherwise default 09:00
@@ -63,21 +63,34 @@ export function scheduleDaily(bot: Telegraf<Context>) {
           if (enrolled.length === 0) return;
 
           const msgs = course.motivation?.messages || [];
+
           if (msgs.length === 0) return;
 
-          // Send the motivation message of the day (cycle through)
-          const todayIdx =
-            Math.floor(Date.now() / (24 * 60 * 60 * 1000)) % msgs.length;
-          const text = msgs[todayIdx];
-
+          // Send motivation based on each user's current day
           await Promise.all(
-            enrolled.map((u) =>
-              bot.telegram
+            enrolled.map(async (u) => {
+              // Calculate user's current day (1-based)
+              const currentDay = calculateProgramDay(u.start_date);
+
+              // Check if course is completed
+              if (currentDay > course.days) {
+                return;
+              }
+
+              const msgIndex = currentDay - 1;
+
+              if (!msgs[msgIndex]) {
+                return;
+              }
+
+              const text = msgs[msgIndex];
+
+              return bot.telegram
                 .sendMessage(u.telegram_id, text)
                 .catch((e: Error) =>
                   console.error('Motivation send failed:', e.message)
-                )
-            )
+                );
+            })
           );
         } catch (e) {
           console.error('Error in motivation schedule:', e);
