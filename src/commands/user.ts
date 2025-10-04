@@ -66,19 +66,23 @@ export function dayCommandCallback(ctx: Context) {
 
             if (videoRow?.file_id) {
               // Find course config for titles and descriptions
-              const courseConfig = COURSES.find(c => c.slug === row.slug);
-              
+              const courseConfig = COURSES.find((c) => c.slug === row.slug);
+
               // Send video with title as caption
-              const videoTitle = courseConfig?.videoTitles && courseConfig.videoTitles[day - 1] 
-                ? courseConfig.videoTitles[day - 1] 
-                : dayCaption(day);
+              const videoTitle =
+                courseConfig?.videoTitles && courseConfig.videoTitles[day - 1]
+                  ? courseConfig.videoTitles[day - 1]
+                  : dayCaption(day);
 
               await ctx.replyWithVideo(videoRow.file_id, {
                 caption: videoTitle,
               });
 
               // Send video description if available
-              if (courseConfig?.videoDescriptions && courseConfig.videoDescriptions[day - 1]) {
+              if (
+                courseConfig?.videoDescriptions &&
+                courseConfig.videoDescriptions[day - 1]
+              ) {
                 await ctx.reply(courseConfig.videoDescriptions[day - 1]);
               }
             }
@@ -106,13 +110,13 @@ async function redeemWithCode(ctx: Context, code: string) {
          updated_at = EXCLUDED.updated_at
        RETURNING id`,
       [
-        telegramId, 
+        telegramId,
         ctx.from!.username || null,
         ctx.from!.first_name || null,
         ctx.from!.last_name || null,
         ctx.from!.language_code || null,
         new Date().toISOString().split('T')[0],
-        new Date().toISOString()
+        new Date().toISOString(),
       ]
     );
     const userId: number = userRes.rows[0].id;
@@ -125,6 +129,7 @@ async function redeemWithCode(ctx: Context, code: string) {
 
     if (existingEnrollmentRes.rows.length > 0) {
       const existingCourse = existingEnrollmentRes.rows[0];
+
       return ctx.reply(REDEEM_ALREADY_ENROLLED(existingCourse.title));
     }
 
