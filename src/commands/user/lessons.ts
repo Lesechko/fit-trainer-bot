@@ -5,7 +5,6 @@ import {
   LESSON_COMPLETED,
   COMPLETION_ERROR,
   COMPLETION_BUTTON_TEXT,
-  COMPLETION_BUTTON_DISABLED_TEXT,
 } from '../../messages';
 import { COURSES } from '../../config';
 import { calculateProgramDay, isLessonCompleted } from '../../utils';
@@ -76,17 +75,22 @@ export function dayCommandCallback(ctx: Context) {
                   const userId = userRes.rows[0].id;
                   const isCompleted = await isLessonCompleted(userId, row.course_id, day);
 
-                  // Create appropriate button based on completion status
-                  const button = {
-                    text: isCompleted ? COMPLETION_BUTTON_DISABLED_TEXT : COMPLETION_BUTTON_TEXT,
-                    callback_data: isCompleted ? 'disabled' : `complete_${row.course_id}_${day}`
-                  };
+                  // Only show button if lesson is not completed
+                  if (!isCompleted) {
+                    const button = {
+                      text: COMPLETION_BUTTON_TEXT,
+                      callback_data: `complete_${row.course_id}_${day}`
+                    };
 
-                  await ctx.reply(courseConfig.videoDescriptions[day - 1], {
-                    reply_markup: {
-                      inline_keyboard: [[button]]
-                    }
-                  });
+                    await ctx.reply(courseConfig.videoDescriptions[day - 1], {
+                      reply_markup: {
+                        inline_keyboard: [[button]]
+                      }
+                    });
+                  } else {
+                    // Send description without button for completed lessons
+                    await ctx.reply(courseConfig.videoDescriptions[day - 1]);
+                  }
                 }
               }
             }
@@ -142,15 +146,10 @@ export async function lessonCompletionCallback(ctx: Context) {
       [userId, courseId, day]
     );
 
-    // Edit the message to disable the button
+    // Remove the button entirely after completion
     try {
-      const disabledButton = {
-        text: COMPLETION_BUTTON_DISABLED_TEXT,
-        callback_data: 'disabled'
-      };
-
       await ctx.editMessageReplyMarkup({
-        inline_keyboard: [[disabledButton]]
+        inline_keyboard: []
       });
     } catch (editError) {
       console.error('Error editing message:', editError);
@@ -167,6 +166,7 @@ export async function lessonCompletionCallback(ctx: Context) {
 }
 
 export async function disabledButtonCallback(ctx: Context) {
-  // Handle clicks on disabled buttons - do nothing
+  // This function is no longer used since we remove buttons entirely after completion
+  // Keeping it for backward compatibility in case there are any old messages with disabled buttons
   await ctx.answerCbQuery('', { show_alert: false });
 }

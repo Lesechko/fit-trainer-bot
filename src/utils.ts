@@ -133,28 +133,40 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
               const userId = userRes.rows[0].id;
               const isCompleted = await isLessonCompleted(userId, course.id, day);
 
-              // Create appropriate button based on completion status
-              const button = {
-                text: isCompleted ? COMPLETION_BUTTON_DISABLED_TEXT : COMPLETION_BUTTON_TEXT,
-                callback_data: isCompleted ? 'disabled' : `complete_${course.id}_${day}`
-              };
+              // Only show button if lesson is not completed
+              if (!isCompleted) {
+                const button = {
+                  text: COMPLETION_BUTTON_TEXT,
+                  callback_data: `complete_${course.id}_${day}`
+                };
 
-              return bot.telegram
-                .sendMessage(
-                  user.telegram_id,
-                  courseConfig.videoDescriptions[day - 1],
-                  {
-                    reply_markup: {
-                      inline_keyboard: [[button]]
+                return bot.telegram
+                  .sendMessage(
+                    user.telegram_id,
+                    courseConfig.videoDescriptions[day - 1],
+                    {
+                      reply_markup: {
+                        inline_keyboard: [[button]]
+                      }
                     }
-                  }
-                )
-                .catch((descErr: Error) => {
-                  console.error(
-                    `Помилка надсилання опису ${user.telegram_id}:`,
-                    descErr.message
-                  );
-                });
+                  )
+                  .catch((descErr: Error) => {
+                    console.error(
+                      `Помилка надсилання опису ${user.telegram_id}:`,
+                      descErr.message
+                    );
+                  });
+              } else {
+                // Send description without button for completed lessons
+                return bot.telegram
+                  .sendMessage(user.telegram_id, courseConfig.videoDescriptions[day - 1])
+                  .catch((descErr: Error) => {
+                    console.error(
+                      `Помилка надсилання опису ${user.telegram_id}:`,
+                      descErr.message
+                    );
+                  });
+              }
             }
           })
           .catch((sendErr: Error) => {
@@ -280,16 +292,28 @@ export async function getCourseProgress(
   totalDays: number
 ): Promise<{ currentDay: number; completedLessons: number; isCompleted: boolean }> {
   try {
-    const result: any = await db.query(
-      'SELECT day FROM lesson_completions WHERE user_id = $1 AND course_id = $2 ORDER BY day',
+    // Get user's enrollment start date
+    const enrollmentRes: any = await db.query(
+      'SELECT start_date FROM user_courses WHERE user_id = $1 AND course_id = $2',
       [userId, courseId]
     );
     
-    const completedLessons = result.rows.length;
-    const completedDays = result.rows.map((row: any) => row.day);
+    if (enrollmentRes.rows.length === 0) {
+      return { currentDay: 0, completedLessons: 0, isCompleted: false };
+    }
     
-    // Find the highest completed day
-    const currentDay = completedDays.length > 0 ? Math.max(...completedDays) : 0;
+    const startDate = enrollmentRes.rows[0].start_date;
+    
+    // Calculate current day based on start date (same logic as /day command)
+    const currentDay = calculateProgramDay(startDate);
+    
+    // Get completed lessons count
+    const completedRes: any = await db.query(
+      'SELECT COUNT(*) as count FROM lesson_completions WHERE user_id = $1 AND course_id = $2',
+      [userId, courseId]
+    );
+    
+    const completedLessons = parseInt(completedRes.rows[0].count);
     const isCompleted = completedLessons >= totalDays;
     
     return { currentDay, completedLessons, isCompleted };
