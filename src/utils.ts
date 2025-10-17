@@ -273,3 +273,28 @@ export async function isLessonCompleted(
     return false;
   }
 }
+
+export async function getCourseProgress(
+  userId: number,
+  courseId: number,
+  totalDays: number
+): Promise<{ currentDay: number; completedLessons: number; isCompleted: boolean }> {
+  try {
+    const result: any = await db.query(
+      'SELECT day FROM lesson_completions WHERE user_id = $1 AND course_id = $2 ORDER BY day',
+      [userId, courseId]
+    );
+    
+    const completedLessons = result.rows.length;
+    const completedDays = result.rows.map((row: any) => row.day);
+    
+    // Find the highest completed day
+    const currentDay = completedDays.length > 0 ? Math.max(...completedDays) : 0;
+    const isCompleted = completedLessons >= totalDays;
+    
+    return { currentDay, completedLessons, isCompleted };
+  } catch (error) {
+    console.error('Error getting course progress:', error);
+    return { currentDay: 0, completedLessons: 0, isCompleted: false };
+  }
+}

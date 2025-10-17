@@ -6,6 +6,8 @@ import {
   redeemCommandCallback,
   lessonCompletionCallback,
   disabledButtonCallback,
+  restartCourseCallback,
+  cancelRestartCallback,
 } from './commands/user';
 import {
   genAccessCodeCommandCallback,
@@ -36,6 +38,8 @@ export function registerCommands(bot: Telegraf<Context>) {
   // Callback handlers
   bot.action(/^complete_\d+_\d+$/, lessonCompletionCallback);
   bot.action('disabled', disabledButtonCallback);
+  bot.action(/^restart_\d+_.+$/, (ctx) => restartCourseCallback(bot, ctx));
+  bot.action('cancel_restart', cancelRestartCallback);
 
   // Admin course management
   bot.command('genaccess', genAccessCodeCommandCallback);
