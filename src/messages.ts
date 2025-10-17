@@ -152,3 +152,25 @@ export const CONTEXT_NOT_SET =
   'ℹ️ Поточний курс не встановлено. Використай /setcourse <slug>';
 export const CONTEXT_CURRENT = (slug: string, title: string) =>
   `🧭 Поточний курс: ${slug} — ${title}`;
+
+// Admin notifications
+export const NEW_USER_ENROLLMENT_NOTIFICATION = (
+  userDisplayName: string,
+  telegramId: number,
+  courseTitle: string,
+  courseSlug: string,
+  startDate: string
+) =>
+  `🎉 Новий учасник курсу!\n\n` +
+  `👤 Користувач: ${userDisplayName}\n` +
+  `🆔 Telegram ID: ${telegramId}\n` +
+  `📚 Курс: ${courseTitle} (${courseSlug})\n` +
+  `📅 Дата початку: ${startDate}\n` +
+  `⏰ Час реєстрації: ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`;
+
+// Lesson completion
+export const LESSON_COMPLETED = (day: number) =>
+  `✅ День ${day} завершено! Відмінна робота! 🎉`;
+export const COMPLETION_ERROR = '⚠️ Помилка при відмітці завершення уроку.';
+export const COMPLETION_BUTTON_TEXT = '💪 Виконано!';
+export const COMPLETION_BUTTON_DISABLED_TEXT = '💚 Здоров\'я покращено!';

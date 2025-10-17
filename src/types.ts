@@ -57,6 +57,14 @@ export type AdminContextRow = {
   updated_at: string;
 };
 
+export type LessonCompletionRow = {
+  id: number;
+  user_id: number;
+  course_id: number;
+  day: number;
+  completed_at: string;
+};
+
 // Static config for hardcoded courses in code
 export type CourseStaticConfig = {
   slug: string;

@@ -84,6 +84,16 @@ export async function initializeSchema(): Promise<void> {
       )
     `);
 
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS lesson_completions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+        day INTEGER NOT NULL,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, course_id, day)
+      )
+    `);
 
     console.log('✅ Database schema initialized successfully');
   } catch (error) {

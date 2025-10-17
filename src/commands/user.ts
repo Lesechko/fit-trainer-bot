@@ -1,4 +1,4 @@
-import { Context } from 'telegraf';
+import { Context, Telegraf } from 'telegraf';
 import { db } from '../db';
 import {
   dayCaption,
@@ -8,23 +8,29 @@ import {
   REDEEM_ALREADY_ENROLLED,
   REDEEM_OK,
   START_ASK_CODE,
+  LESSON_COMPLETED,
+  COMPLETION_ERROR,
+  COMPLETION_BUTTON_TEXT,
+  COMPLETION_BUTTON_DISABLED_TEXT,
 } from '../messages';
 import { COURSES } from '../config';
-import { calculateProgramDay, getEnrollmentStartDateForCourse } from '../utils';
+import { calculateProgramDay, getEnrollmentStartDateForCourse, notifyAdminNewEnrollment, isLessonCompleted } from '../utils';
 
-export function startCommandCallback(ctx: Context) {
-  if (!ctx.from) {
-    return;
-  }
+export function startCommandCallback(bot: Telegraf<Context>) {
+  return (ctx: Context) => {
+    if (!ctx.from) {
+      return;
+    }
 
-  const text = (ctx.message as any)?.text as string | undefined;
-  const parts = (text || '').trim().split(/\s+/);
+    const text = (ctx.message as any)?.text as string | undefined;
+    const parts = (text || '').trim().split(/\s+/);
 
-  if (parts.length === 2) {
-    return redeemWithCode(ctx, parts[1]);
-  }
+    if (parts.length === 2) {
+      return redeemWithCode(bot, ctx, parts[1]);
+    }
 
-  ctx.reply(START_ASK_CODE);
+    ctx.reply(START_ASK_CODE);
+  };
 }
 
 export function dayCommandCallback(ctx: Context) {
@@ -36,7 +42,7 @@ export function dayCommandCallback(ctx: Context) {
 
   db.query(
     `
-    SELECT uc.start_date, c.slug, c.title 
+    SELECT uc.start_date, c.slug, c.title, c.id as course_id
     FROM user_courses uc 
     JOIN courses c ON c.id = uc.course_id 
     WHERE uc.user_id = (SELECT id FROM users WHERE telegram_id = $1)
@@ -83,7 +89,28 @@ export function dayCommandCallback(ctx: Context) {
                 courseConfig?.videoDescriptions &&
                 courseConfig.videoDescriptions[day - 1]
               ) {
-                await ctx.reply(courseConfig.videoDescriptions[day - 1]);
+                // Get user's internal ID to check completion status
+                const userRes: any = await db.query(
+                  'SELECT id FROM users WHERE telegram_id = $1',
+                  [telegramId]
+                );
+                
+                if (userRes.rows.length > 0) {
+                  const userId = userRes.rows[0].id;
+                  const isCompleted = await isLessonCompleted(userId, row.course_id, day);
+
+                  // Create appropriate button based on completion status
+                  const button = {
+                    text: isCompleted ? COMPLETION_BUTTON_DISABLED_TEXT : COMPLETION_BUTTON_TEXT,
+                    callback_data: isCompleted ? 'disabled' : `complete_${row.course_id}_${day}`
+                  };
+
+                  await ctx.reply(courseConfig.videoDescriptions[day - 1], {
+                    reply_markup: {
+                      inline_keyboard: [[button]]
+                    }
+                  });
+                }
               }
             }
           });
@@ -94,7 +121,7 @@ export function dayCommandCallback(ctx: Context) {
     });
 }
 
-async function redeemWithCode(ctx: Context, code: string) {
+async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string) {
   const telegramId = ctx.from!.id;
 
   try {
@@ -166,6 +193,19 @@ async function redeemWithCode(ctx: Context, code: string) {
       [userId, new Date().toISOString(), row.id]
     );
 
+    // Send notification to admin about new enrollment
+    await notifyAdminNewEnrollment(
+      bot,
+      {
+        telegram_id: ctx.from!.id,
+        username: ctx.from!.username || null,
+        first_name: ctx.from!.first_name || null,
+        last_name: ctx.from!.last_name || null,
+      },
+      row.slug,
+      startDate
+    );
+
     const course = COURSES.find((c) => c.slug === row.slug);
     ctx.reply(REDEEM_OK(row.slug));
 
@@ -178,19 +218,94 @@ async function redeemWithCode(ctx: Context, code: string) {
   }
 }
 
-export async function redeemCommandCallback(ctx: Context) {
+export function redeemCommandCallback(bot: Telegraf<Context>) {
+  return (ctx: Context) => {
+    if (!ctx.from) {
+      return;
+    }
+
+    const text = (ctx.message as any)?.text as string | undefined;
+    const parts = (text || '').trim().split(/\s+/);
+
+    if (parts.length !== 2) {
+      return ctx.reply(REDEEM_USAGE);
+    }
+
+    const code = parts[1];
+
+    return redeemWithCode(bot, ctx, code);
+  };
+}
+
+export async function lessonCompletionCallback(ctx: Context) {
   if (!ctx.from) {
     return;
   }
 
-  const text = (ctx.message as any)?.text as string | undefined;
-  const parts = (text || '').trim().split(/\s+/);
+  const telegramId = ctx.from.id;
+  const callbackData = (ctx.callbackQuery as any)?.data;
 
-  if (parts.length !== 2) {
-    return ctx.reply(REDEEM_USAGE);
+  if (!callbackData || !callbackData.startsWith('complete_')) {
+    return;
   }
 
-  const code = parts[1];
+  try {
+    // Extract course_id and day from callback data
+    const parts = callbackData.split('_');
+    if (parts.length !== 3) {
+      return ctx.answerCbQuery(COMPLETION_ERROR);
+    }
 
-  return redeemWithCode(ctx, code);
+    const courseId = parseInt(parts[1]);
+    const day = parseInt(parts[2]);
+
+    if (!Number.isFinite(courseId) || !Number.isFinite(day)) {
+      return ctx.answerCbQuery(COMPLETION_ERROR);
+    }
+
+    // Get user's internal ID
+    const userRes: any = await db.query(
+      'SELECT id FROM users WHERE telegram_id = $1',
+      [telegramId]
+    );
+
+    if (userRes.rows.length === 0) {
+      return ctx.answerCbQuery(COMPLETION_ERROR);
+    }
+
+    const userId = userRes.rows[0].id;
+
+    // Mark lesson as completed
+    await db.query(
+      'INSERT INTO lesson_completions (user_id, course_id, day) VALUES ($1, $2, $3)',
+      [userId, courseId, day]
+    );
+
+    // Edit the message to disable the button
+    try {
+      const disabledButton = {
+        text: COMPLETION_BUTTON_DISABLED_TEXT,
+        callback_data: 'disabled'
+      };
+
+      await ctx.editMessageReplyMarkup({
+        inline_keyboard: [[disabledButton]]
+      });
+    } catch (editError) {
+      console.error('Error editing message:', editError);
+      // If editing fails, just answer the callback query
+      await ctx.answerCbQuery(LESSON_COMPLETED(day));
+      return;
+    }
+
+    await ctx.answerCbQuery(LESSON_COMPLETED(day));
+  } catch (error) {
+    console.error('Error in lessonCompletionCallback:', error);
+    await ctx.answerCbQuery(COMPLETION_ERROR);
+  }
+}
+
+export async function disabledButtonCallback(ctx: Context) {
+  // Handle clicks on disabled buttons - do nothing
+  await ctx.answerCbQuery('', { show_alert: false });
 }

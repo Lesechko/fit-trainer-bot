@@ -4,6 +4,8 @@ import {
   startCommandCallback,
   dayCommandCallback,
   redeemCommandCallback,
+  lessonCompletionCallback,
+  disabledButtonCallback,
 } from './commands/user';
 import {
   genAccessCodeCommandCallback,
@@ -27,9 +29,13 @@ import { isAdmin } from './utils';
 
 export function registerCommands(bot: Telegraf<Context>) {
   // User commands
-  bot.start(startCommandCallback);
+  bot.start(startCommandCallback(bot));
   bot.command('day', dayCommandCallback);
-  bot.command('redeem', redeemCommandCallback);
+  bot.command('redeem', redeemCommandCallback(bot));
+
+  // Callback handlers
+  bot.action(/^complete_\d+_\d+$/, lessonCompletionCallback);
+  bot.action('disabled', disabledButtonCallback);
 
   // Admin course management
   bot.command('genaccess', genAccessCodeCommandCallback);

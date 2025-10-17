@@ -1,7 +1,7 @@
 import { Context, Telegraf } from 'telegraf';
 import { ADMIN_ID } from './config';
 import { db } from './db';
-import { dayCaption } from './messages';
+import { dayCaption, NEW_USER_ENROLLMENT_NOTIFICATION, COMPLETION_BUTTON_TEXT, COMPLETION_BUTTON_DISABLED_TEXT } from './messages';
 import { COURSES, TIMEZONE } from './config';
 
 export function calculateProgramDay(
@@ -19,7 +19,9 @@ export function calculateProgramDay(
     0,
     0
   );
+
   const diffDays = Math.floor((nowUTC - startUTC) / (1000 * 60 * 60 * 24));
+
   return Math.max(1, diffDays + 1);
 }
 
@@ -101,7 +103,7 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
       );
       const videos = videosRes.rows as { day: number; file_id: string }[];
 
-      const sends = enrolled.map((user) => {
+      const sends = enrolled.map(async (user) => {
         const day = calculateProgramDay(user.start_date);
         const video = videos.find((v) => v.day === day);
         if (!video) return Promise.resolve();
@@ -114,16 +116,38 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
 
         return bot.telegram
           .sendVideo(user.telegram_id, video.file_id, { caption: videoTitle })
-          .then(() => {
+          .then(async () => {
             // Send video description if available
             if (
               courseConfig.videoDescriptions &&
               courseConfig.videoDescriptions[day - 1]
             ) {
+              // Check if lesson is already completed
+              const userRes: any = await db.query(
+                'SELECT id FROM users WHERE telegram_id = $1',
+                [user.telegram_id]
+              );
+              
+              if (userRes.rows.length === 0) return;
+
+              const userId = userRes.rows[0].id;
+              const isCompleted = await isLessonCompleted(userId, course.id, day);
+
+              // Create appropriate button based on completion status
+              const button = {
+                text: isCompleted ? COMPLETION_BUTTON_DISABLED_TEXT : COMPLETION_BUTTON_TEXT,
+                callback_data: isCompleted ? 'disabled' : `complete_${course.id}_${day}`
+              };
+
               return bot.telegram
                 .sendMessage(
                   user.telegram_id,
-                  courseConfig.videoDescriptions[day - 1]
+                  courseConfig.videoDescriptions[day - 1],
+                  {
+                    reply_markup: {
+                      inline_keyboard: [[button]]
+                    }
+                  }
                 )
                 .catch((descErr: Error) => {
                   console.error(
@@ -192,4 +216,60 @@ export function calculateUserProgress(
     : `📅 День ${currentDay}/${courseDays}`;
 
   return { currentDay, isCompleted, status };
+}
+
+export async function notifyAdminNewEnrollment(
+  bot: Telegraf<Context>,
+  user: {
+    telegram_id: number;
+    username: string | null;
+    first_name: string | null;
+    last_name: string | null;
+  },
+  courseSlug: string,
+  startDate: string
+): Promise<void> {
+  if (!ADMIN_ID) {
+    console.log('ADMIN_ID not set, skipping notification');
+    return;
+  }
+
+  try {
+    // Get course title from config
+    const courseConfig = COURSES.find((c) => c.slug === courseSlug);
+    const courseTitle = courseConfig?.title || courseSlug;
+
+    // Format user display name
+    const userDisplayName = formatUserDisplayName(user);
+
+    // Send notification to admin
+    const notificationMessage = NEW_USER_ENROLLMENT_NOTIFICATION(
+      userDisplayName,
+      user.telegram_id,
+      courseTitle,
+      courseSlug,
+      startDate
+    );
+
+    await bot.telegram.sendMessage(ADMIN_ID, notificationMessage);
+  } catch (error) {
+    console.error('Failed to send admin notification:', error);
+  }
+}
+
+export async function isLessonCompleted(
+  userId: number,
+  courseId: number,
+  day: number
+): Promise<boolean> {
+  try {
+    const result: any = await db.query(
+      'SELECT id FROM lesson_completions WHERE user_id = $1 AND course_id = $2 AND day = $3',
+      [userId, courseId, day]
+    );
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Error checking lesson completion:', error);
+    return false;
+  }
 }
