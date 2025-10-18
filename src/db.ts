@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { DATABASE_URL } from './config';
-import { UserDayRow, UserRow } from './types';
+import { UserRow } from './types';
 
 export const db = new Pool({
   connectionString: DATABASE_URL,
@@ -21,8 +21,6 @@ export async function initializeSchema(): Promise<void> {
         first_name TEXT,
         last_name TEXT,
         language_code TEXT,
-        start_date TEXT,
-        day INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -44,8 +42,8 @@ export async function initializeSchema(): Promise<void> {
       CREATE TABLE IF NOT EXISTS course_videos (
         id SERIAL PRIMARY KEY,
         course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-        day INTEGER NOT NULL,
-        file_id TEXT NOT NULL,
+        day INTEGER NOT NULL CHECK (day > 0),
+        file_id VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(course_id, day)
       )
@@ -54,7 +52,7 @@ export async function initializeSchema(): Promise<void> {
     await db.query(`
       CREATE TABLE IF NOT EXISTS user_courses (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
         start_date TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -65,13 +63,13 @@ export async function initializeSchema(): Promise<void> {
     await db.query(`
       CREATE TABLE IF NOT EXISTS course_access_codes (
         id SERIAL PRIMARY KEY,
-        code TEXT UNIQUE NOT NULL,
+        code VARCHAR(50) UNIQUE NOT NULL,
         course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-        created_by INTEGER,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expires_at TIMESTAMP,
-        is_used BOOLEAN DEFAULT FALSE,
-        used_by INTEGER,
+        is_used BOOLEAN DEFAULT FALSE NOT NULL,
+        used_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
         used_at TIMESTAMP
       )
     `);
@@ -80,6 +78,7 @@ export async function initializeSchema(): Promise<void> {
       CREATE TABLE IF NOT EXISTS admin_context (
         telegram_id INTEGER PRIMARY KEY,
         course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -87,12 +86,29 @@ export async function initializeSchema(): Promise<void> {
     await db.query(`
       CREATE TABLE IF NOT EXISTS lesson_completions (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-        day INTEGER NOT NULL,
+        day INTEGER NOT NULL CHECK (day > 0),
         completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_id, course_id, day)
       )
+    `);
+
+    // Essential indexes only - based on actual query patterns
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id)
+    `);
+    
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_user_courses_course_id ON user_courses(course_id)
+    `);
+    
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_course_access_codes_code ON course_access_codes(code)
+    `);
+    
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_courses_slug ON courses(slug)
     `);
 
     console.log('✅ Database schema initialized successfully');
@@ -102,4 +118,4 @@ export async function initializeSchema(): Promise<void> {
   }
 }
 
-export type { UserDayRow, UserRow };
+export type { UserRow };

@@ -5,13 +5,9 @@ export type UserRow = {
   first_name: string | null;
   last_name: string | null;
   language_code: string | null;
-  start_date: string;
-  day: number;
   created_at: string;
   updated_at: string;
 };
-
-export type UserDayRow = Pick<UserRow, 'day'>;
 
 // Multi-course types
 export type CourseRow = {

@@ -1,7 +1,11 @@
 import { Context, Telegraf } from 'telegraf';
 import { ADMIN_ID } from './config';
 import { db } from './db';
-import { dayCaption, NEW_USER_ENROLLMENT_NOTIFICATION, COMPLETION_BUTTON_TEXT, COMPLETION_BUTTON_DISABLED_TEXT } from './messages';
+import {
+  dayCaption,
+  NEW_USER_ENROLLMENT_NOTIFICATION,
+  COMPLETION_BUTTON_TEXT,
+} from './messages';
 import { COURSES, TIMEZONE } from './config';
 
 export function calculateProgramDay(
@@ -127,17 +131,21 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
                 'SELECT id FROM users WHERE telegram_id = $1',
                 [user.telegram_id]
               );
-              
+
               if (userRes.rows.length === 0) return;
 
               const userId = userRes.rows[0].id;
-              const isCompleted = await isLessonCompleted(userId, course.id, day);
+              const isCompleted = await isLessonCompleted(
+                userId,
+                course.id,
+                day
+              );
 
               // Only show button if lesson is not completed
               if (!isCompleted) {
                 const button = {
                   text: COMPLETION_BUTTON_TEXT,
-                  callback_data: `complete_${course.id}_${day}`
+                  callback_data: `complete_${course.id}_${day}`,
                 };
 
                 return bot.telegram
@@ -146,8 +154,8 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
                     courseConfig.videoDescriptions[day - 1],
                     {
                       reply_markup: {
-                        inline_keyboard: [[button]]
-                      }
+                        inline_keyboard: [[button]],
+                      },
                     }
                   )
                   .catch((descErr: Error) => {
@@ -159,7 +167,10 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
               } else {
                 // Send description without button for completed lessons
                 return bot.telegram
-                  .sendMessage(user.telegram_id, courseConfig.videoDescriptions[day - 1])
+                  .sendMessage(
+                    user.telegram_id,
+                    courseConfig.videoDescriptions[day - 1]
+                  )
                   .catch((descErr: Error) => {
                     console.error(
                       `Помилка надсилання опису ${user.telegram_id}:`,
@@ -290,32 +301,36 @@ export async function getCourseProgress(
   userId: number,
   courseId: number,
   totalDays: number
-): Promise<{ currentDay: number; completedLessons: number; isCompleted: boolean }> {
+): Promise<{
+  currentDay: number;
+  completedLessons: number;
+  isCompleted: boolean;
+}> {
   try {
     // Get user's enrollment start date
     const enrollmentRes: any = await db.query(
       'SELECT start_date FROM user_courses WHERE user_id = $1 AND course_id = $2',
       [userId, courseId]
     );
-    
+
     if (enrollmentRes.rows.length === 0) {
       return { currentDay: 0, completedLessons: 0, isCompleted: false };
     }
-    
+
     const startDate = enrollmentRes.rows[0].start_date;
-    
+
     // Calculate current day based on start date (same logic as /day command)
     const currentDay = calculateProgramDay(startDate);
-    
+
     // Get completed lessons count
     const completedRes: any = await db.query(
       'SELECT COUNT(*) as count FROM lesson_completions WHERE user_id = $1 AND course_id = $2',
       [userId, courseId]
     );
-    
+
     const completedLessons = parseInt(completedRes.rows[0].count);
     const isCompleted = completedLessons >= totalDays;
-    
+
     return { currentDay, completedLessons, isCompleted };
   } catch (error) {
     console.error('Error getting course progress:', error);

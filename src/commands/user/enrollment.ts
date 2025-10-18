@@ -56,8 +56,8 @@ async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string
   try {
     // Ensure user exists and fetch internal user id
     const userRes: any = await db.query(
-      `INSERT INTO users (telegram_id, username, first_name, last_name, language_code, start_date, updated_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      `INSERT INTO users (telegram_id, username, first_name, last_name, language_code, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
        ON CONFLICT (telegram_id) DO UPDATE SET 
          username = EXCLUDED.username,
          first_name = EXCLUDED.first_name,
@@ -71,7 +71,6 @@ async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string
         ctx.from!.first_name || null,
         ctx.from!.last_name || null,
         ctx.from!.language_code || null,
-        new Date().toISOString().split('T')[0],
         new Date().toISOString(),
       ]
     );
