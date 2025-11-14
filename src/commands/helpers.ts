@@ -1,5 +1,5 @@
 import { Context } from 'telegraf';
-import { isAdmin } from '../utils';
+import { isAdmin } from '../services/userService';
 import { AdminContextRow } from '../types';
 import { db } from '../db';
 

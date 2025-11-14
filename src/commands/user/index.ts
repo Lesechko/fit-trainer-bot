@@ -4,10 +4,10 @@ export {
   redeemCommandCallback,
   restartCourseCallback,
   cancelRestartCallback,
+  startDay1Callback,
 } from './enrollment';
 
 export {
-  dayCommandCallback,
   lessonCompletionCallback,
   disabledButtonCallback,
 } from './lessons';

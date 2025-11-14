@@ -10,9 +10,15 @@ import {
   COURSE_IN_PROGRESS_RESTART,
   RESTART_BUTTON_TEXT,
   CANCEL_BUTTON_TEXT,
+  COURSE_NOT_FOUND,
+  START_DAY_1_BUTTON_TEXT,
+  START_DAY_1_MESSAGE,
 } from '../../messages';
 import { COURSES } from '../../config';
-import { getEnrollmentStartDateForCourse, notifyAdminNewEnrollment, getCourseProgress } from '../../utils';
+import { getEnrollmentStartDateForCourse } from '../../services/courseService';
+import { notifyAdminNewEnrollment } from '../../services/userService';
+import { getCourseProgress } from '../../services/lessonService';
+import { sendDayVideoToUser } from '../../services/videoService';
 
 export function startCommandCallback(bot: Telegraf<Context>) {
   return (ctx: Context) => {
@@ -87,10 +93,14 @@ async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string
       
       // Get course config to check total days
       const courseConfig = COURSES.find((c) => c.slug === existingCourse.slug);
-      const totalDays = courseConfig?.days || 10;
+      if (!courseConfig) {
+        return ctx.reply(COURSE_NOT_FOUND);
+      }
+      
+      const totalDays = courseConfig.days.length;
       
       // Check course progress
-      const progress = await getCourseProgress(userId, existingCourse.course_id, totalDays);
+      const progress = await getCourseProgress(userId, existingCourse.course_id, courseConfig);
       
       if (progress.isCompleted) {
         // Course is completed - offer to restart
@@ -179,6 +189,18 @@ async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string
     if (course?.welcome) {
       await ctx.reply(course.welcome);
     }
+
+    // Show button to start day 1
+    const startButton = {
+      text: START_DAY_1_BUTTON_TEXT,
+      callback_data: `start_day_1_${row.course_id}`,
+    };
+
+    await ctx.reply(START_DAY_1_MESSAGE, {
+      reply_markup: {
+        inline_keyboard: [[startButton]],
+      },
+    });
   } catch (e) {
     console.error(e);
     return ctx.reply(REDEEM_INVALID);
@@ -246,4 +268,76 @@ export async function restartCourseCallback(bot: Telegraf<Context>, ctx: Context
 
 export async function cancelRestartCallback(ctx: Context) {
   await ctx.answerCbQuery('❌ Перезапуск скасовано');
+}
+
+export async function startDay1Callback(bot: Telegraf<Context>, ctx: Context) {
+  if (!ctx.from) {
+    return;
+  }
+
+  const callbackData = (ctx.callbackQuery as any)?.data;
+
+  if (!callbackData || !callbackData.startsWith('start_day_1_')) {
+    return;
+  }
+
+  try {
+    // Extract course_id from callback data
+    const parts = callbackData.split('_');
+    if (parts.length !== 4) {
+      return ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
+    }
+
+    const courseId = parseInt(parts[3]);
+
+    if (!Number.isFinite(courseId)) {
+      return ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
+    }
+
+    // Get user's course info
+    const telegramId = ctx.from.id;
+    const userRes: any = await db.query(
+      'SELECT id FROM users WHERE telegram_id = $1',
+      [telegramId]
+    );
+
+    if (userRes.rows.length === 0) {
+      return ctx.answerCbQuery('⚠️ Користувач не знайдений');
+    }
+
+    const userId = userRes.rows[0].id;
+
+    // Verify user is enrolled in this course
+    const enrollmentRes: any = await db.query(
+      'SELECT c.slug FROM user_courses uc JOIN courses c ON c.id = uc.course_id WHERE uc.user_id = $1 AND uc.course_id = $2',
+      [userId, courseId]
+    );
+
+    if (enrollmentRes.rows.length === 0) {
+      return ctx.answerCbQuery('⚠️ Ви не зареєстровані на цей курс');
+    }
+
+    const courseSlug = enrollmentRes.rows[0].slug;
+
+    // Mark that day 1 was sent manually (we'll use this to prevent scheduled job from sending it)
+    // We'll track this by checking enrollment date in the scheduled job
+    // For now, just send the video
+    await sendDayVideoToUser(bot, telegramId, courseId, courseSlug, 1);
+
+    // Remove the button after sending
+    try {
+      await ctx.editMessageReplyMarkup({
+        inline_keyboard: [],
+      });
+    } catch (editError) {
+      // If editing fails, just answer the callback query
+      await ctx.answerCbQuery('✅ Перше відео надіслано!');
+      return;
+    }
+
+    await ctx.answerCbQuery('✅ Перше відео надіслано!');
+  } catch (error) {
+    console.error('Error in startDay1Callback:', error);
+    await ctx.answerCbQuery('⚠️ Помилка при надсиланні відео');
+  }
 }

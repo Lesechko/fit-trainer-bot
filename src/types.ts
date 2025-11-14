@@ -61,22 +61,57 @@ export type LessonCompletionRow = {
   completed_at: string;
 };
 
+// Custom button action types
+export type CustomButtonAction = 
+  | { type: 'video'; videoFileId: string; message?: string } // Send an extra video
+  | { type: 'message'; text: string } // Send a text message
+  | { type: 'url'; url: string } // Open a URL (Telegram will handle this)
+
+// Custom button configuration
+export type CustomButton = {
+  id: string; // Unique identifier for this button (used in callback_data)
+  text: string; // Button label
+  action: CustomButtonAction; // What happens when button is clicked
+  oneTime?: boolean; // If true, button disappears after first use (default: false)
+};
+
+// Day-specific configuration
+export type CourseDayConfig = {
+  day: number; // 1-based day number
+  videoTitle: string; // Title sent as video caption
+  videoDescription?: string; // Detailed description sent separately
+  motivationMessage?: string; // Day-specific motivation message (optional)
+  autoSend?: boolean; // Whether to auto-send this day via scheduled job (default: true). Set to false for manual sends (e.g., day 1 via button)
+  customButtons?: CustomButton[]; // Custom buttons for this day (e.g., extra video, resources, etc.)
+  
+  // Future extensibility examples:
+  // dailyTime?: string; // Override course default for this day
+  // additionalContent?: string[]; // Extra messages for this day
+  // quiz?: { question: string; options: string[]; correct: number };
+  // resources?: { title: string; url: string }[];
+  // prerequisites?: number[]; // Days that must be completed first
+};
+
 // Static config for hardcoded courses in code
 export type CourseStaticConfig = {
   slug: string;
   title: string;
-  days: number;
   welcome: string;
-  // Time in HH:MM (24h) to send daily course video in TIMEZONE
-  dailyTime?: string; // default '09:00' if not set
+  
+  // Scheduling
+  dailyTime?: string; // Default time for all days (HH:MM format). If not set, course is ignored by daily scheduler
+  
+  // Motivation messages
   motivation?: {
-    time: string; // '09:00' in TIMEZONE
-    messages: string[];
+    time: string; // When to send motivation (HH:MM format)
+    defaultMessages?: string[]; // Fallback messages if day doesn't have one
   };
-  // Video titles for each day (index 0 = day 1, etc.) - sent as video caption
-  videoTitles?: string[];
-  // Detailed descriptions for each day's video (index 0 = day 1, etc.) - sent as separate message
-  videoDescriptions?: string[];
+  
+  // Features
+  trackLessonCompletion?: boolean; // Whether to track lesson completion (shows "Виконано!" button, tracks progress). Default: true. Set to false to disable this feature
+  
+  // Day-specific configuration
+  days: CourseDayConfig[]; // All day data grouped together
 };
 
 // (duplicate removed)

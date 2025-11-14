@@ -18,7 +18,7 @@ import {
   SENDVIDEO_DONE,
   SENDVIDEO_ERROR,
 } from '../messages';
-import { isAdmin } from '../utils';
+import { isAdmin } from '../services/userService';
 import { db } from '../db';
 import {
   ensureFromAndAdmin,

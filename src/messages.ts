@@ -79,6 +79,7 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 *Управління користувачами:*
 /listusers — список користувачів поточного курсу
 /removeuser <telegram_id> — видалити користувача з поточного курсу
+/sendday <telegram_id> <день> — надіслати відео конкретного дня конкретному користувачу
 
 *Управління відео (для поточного курсу):*
 /addvideo <день> <file_id> — додати відео до дня
@@ -127,6 +128,8 @@ export const COURSE_IN_PROGRESS_RESTART = (courseName: string, currentDay: numbe
 
 export const RESTART_BUTTON_TEXT = '🔄 Почати курс заново';
 export const CANCEL_BUTTON_TEXT = '❌ Скасувати';
+export const START_DAY_1_BUTTON_TEXT = '🚀 Поїхали!';
+export const START_DAY_1_MESSAGE = 'Готовий почати? Натисни кнопку нижче, щоб отримати перше відео! 👇';
 
 export const REDEEM_OK = (slug: string) =>
   `✅ Тебе зараховано на курс: ${slug}!`;
@@ -138,6 +141,17 @@ export const REMOVEUSER_SUCCESS = (telegramId: number, courseTitle: string) =>
   `✅ Користувач ${telegramId} видалений з курсу "${courseTitle}"`;
 export const REMOVEUSER_NOT_FOUND = (telegramId: number) =>
   `⚠️ Користувач ${telegramId} не знайдений у поточному курсі`;
+
+// Send day to user
+export const SENDDAY_USAGE = '⚠️ Використай так: /sendday <telegram_id> <день>';
+export const SENDDAY_ERROR = '⚠️ Помилка при надсиланні відео';
+export const SENDDAY_SUCCESS = (telegramId: number, day: number) =>
+  `✅ Відео дня ${day} надіслано користувачу ${telegramId}`;
+export const SENDDAY_USER_NOT_FOUND = (telegramId: number) =>
+  `⚠️ Користувач ${telegramId} не знайдений у поточному курсі`;
+export const SENDDAY_INVALID_DAY = '⚠️ Некоректний номер дня';
+export const SENDDAY_VIDEO_NOT_FOUND = (day: number) =>
+  `⚠️ Відео для дня ${day} не знайдено в поточному курсі`;
 
 // Start flow
 export const START_ASK_CODE =

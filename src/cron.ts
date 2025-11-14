@@ -1,32 +1,23 @@
 import cron from 'node-cron';
 import { Telegraf, Context } from 'telegraf';
 import { TIMEZONE, COURSES } from './config';
-import { sendDailyVideos, calculateProgramDay } from './utils';
+import { sendDailyVideos } from './services/videoService';
+import { calculateProgramDay, getMotivationMessage } from './services/courseService';
 
 export function scheduleDaily(bot: Telegraf<Context>) {
-  // If any course defines dailyTime, schedule per course; otherwise default 09:00
-  const anyHasDaily = COURSES.some((c) => c.dailyTime);
-  if (anyHasDaily) {
-    for (const course of COURSES) {
-      const t = course.dailyTime || '09:00';
-      const [hh, mm] = t.split(':');
-      const expr = `${Number(mm)} ${Number(hh)} * * *`;
-
-      cron.schedule(
-        expr,
-        async () => {
-          try {
-            await sendDailyVideos(bot);
-          } catch (error) {
-            console.error('Error in scheduleDaily:', error);
-          }
-        },
-        { timezone: TIMEZONE }
-      );
+  // Schedule daily videos only for courses that have dailyTime defined
+  // Courses without dailyTime are ignored by the scheduler
+  for (const course of COURSES) {
+    if (!course.dailyTime) {
+      continue; // Skip courses without dailyTime
     }
-  } else {
+
+    const t = course.dailyTime;
+    const [hh, mm] = t.split(':');
+    const expr = `${Number(mm)} ${Number(hh)} * * *`;
+
     cron.schedule(
-      '0 9 * * *',
+      expr,
       async () => {
         try {
           await sendDailyVideos(bot);
@@ -62,10 +53,6 @@ export function scheduleDaily(bot: Telegraf<Context>) {
           }[];
           if (enrolled.length === 0) return;
 
-          const msgs = course.motivation?.messages || [];
-
-          if (msgs.length === 0) return;
-
           // Send motivation based on each user's current day
           await Promise.all(
             enrolled.map(async (u) => {
@@ -73,17 +60,16 @@ export function scheduleDaily(bot: Telegraf<Context>) {
               const currentDay = calculateProgramDay(u.start_date);
 
               // Check if course is completed
-              if (currentDay > course.days) {
+              if (currentDay > course.days.length) {
                 return;
               }
 
-              const msgIndex = currentDay - 1;
+              // Get motivation message for this day
+              const text = getMotivationMessage(course, currentDay);
 
-              if (!msgs[msgIndex]) {
+              if (!text) {
                 return;
               }
-
-              const text = msgs[msgIndex];
 
               return bot.telegram
                 .sendMessage(u.telegram_id, text)

@@ -1,4 +1,4 @@
-import { Context } from 'telegraf';
+import { Context, Telegraf } from 'telegraf';
 import { db } from '../db';
 import {
   GENACCESS_USAGE,
@@ -23,10 +23,18 @@ import {
   REMOVEUSER_ERROR,
   REMOVEUSER_SUCCESS,
   REMOVEUSER_NOT_FOUND,
+  SENDDAY_USAGE,
+  SENDDAY_ERROR,
+  SENDDAY_SUCCESS,
+  SENDDAY_USER_NOT_FOUND,
+  SENDDAY_INVALID_DAY,
+  SENDDAY_VIDEO_NOT_FOUND,
 } from '../messages';
 import { ensureFromAndAdmin, getCommandParts, getAdminCourseContext } from './helpers';
 import { COURSES } from '../config';
-import { formatUserDisplayName, calculateUserProgress } from '../utils';
+import { formatUserDisplayName } from '../services/userHelpers';
+import { calculateUserProgress } from '../services/courseService';
+import { sendDayVideoToUser } from '../services/videoService';
 
 export async function listUsersCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx)) return;
@@ -74,11 +82,13 @@ export async function listUsersCommandCallback(ctx: Context) {
 
     // Get course config for days count
     const courseConfig = COURSES.find(c => c.slug === users[0]?.course_slug);
-    const courseDays = courseConfig?.days || 10; // fallback to 10 days
+    if (!courseConfig) {
+      return ctx.reply('⚠️ Конфігурація курсу не знайдена');
+    }
 
     // Format users list
     const list = users.map(u => {
-      const { status } = calculateUserProgress(u.start_date, courseDays);
+      const { status } = calculateUserProgress(u.start_date, courseConfig);
       const displayName = formatUserDisplayName(u);
       
       return `👤 ${displayName} (${u.telegram_id}) | ${status} | Почав: ${u.start_date}`;
@@ -300,4 +310,68 @@ export async function removeUserCommandCallback(ctx: Context) {
     console.error(e);
     return ctx.reply(REMOVEUSER_ERROR);
   }
+}
+
+export function sendDayToUserCommandCallback(bot: Telegraf<Context>) {
+  return async (ctx: Context) => {
+    if (!ensureFromAndAdmin(ctx)) return;
+
+    const parts = getCommandParts(ctx);
+    if (parts.length !== 3) {
+      return ctx.reply(SENDDAY_USAGE);
+    }
+
+    const telegramId = parseInt(parts[1]);
+    const day = parseInt(parts[2]);
+
+    if (!Number.isFinite(telegramId) || !Number.isFinite(day)) {
+      return ctx.reply(SENDDAY_USAGE);
+    }
+
+    if (day < 1) {
+      return ctx.reply(SENDDAY_INVALID_DAY);
+    }
+
+    try {
+      const adminContext = await getAdminCourseContext(ctx.from!.id);
+      
+      if (!adminContext?.course_id) {
+        return ctx.reply(CONTEXT_NOT_SET);
+      }
+
+      // Verify user is enrolled in this course
+      const userRes: any = await db.query(`
+        SELECT u.telegram_id, c.slug, c.id as course_id
+        FROM users u
+        JOIN user_courses uc ON u.id = uc.user_id
+        JOIN courses c ON c.id = uc.course_id
+        WHERE u.telegram_id = $1 AND uc.course_id = $2
+      `, [telegramId, adminContext.course_id]);
+
+      if (userRes.rows.length === 0) {
+        return ctx.reply(SENDDAY_USER_NOT_FOUND(telegramId));
+      }
+
+      const courseSlug = userRes.rows[0].slug;
+      const courseId = userRes.rows[0].course_id;
+
+      // Check if video exists for this day
+      const videoRes: any = await db.query(
+        'SELECT day FROM course_videos WHERE course_id = $1 AND day = $2',
+        [courseId, day]
+      );
+
+      if (videoRes.rows.length === 0) {
+        return ctx.reply(SENDDAY_VIDEO_NOT_FOUND(day));
+      }
+
+      // Send the video
+      await sendDayVideoToUser(bot, telegramId, courseId, courseSlug, day);
+
+      return ctx.reply(SENDDAY_SUCCESS(telegramId, day));
+    } catch (e) {
+      console.error(e);
+      return ctx.reply(SENDDAY_ERROR);
+    }
+  };
 }

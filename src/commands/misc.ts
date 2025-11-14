@@ -4,7 +4,8 @@ import {
   SEND_DAILY_COMPLETE,
   SEND_DAILY_ERROR,
 } from '../messages';
-import { isAdmin, sendDailyVideos } from '../utils';
+import { isAdmin } from '../services/userService';
+import { sendDailyVideos } from '../services/videoService';
 
 export function sendDailyCommandCallback(bot: Telegraf<Context>) {
   return async (ctx: Context) => {
