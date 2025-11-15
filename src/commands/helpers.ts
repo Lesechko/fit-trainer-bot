@@ -1,4 +1,5 @@
 import { Context } from 'telegraf';
+import { QueryResult } from 'pg';
 import { isAdmin } from '../services/userService';
 import { AdminContextRow } from '../types';
 import { db } from '../db';
@@ -29,7 +30,7 @@ export async function getAdminCourseContext(
   telegramId: number
 ): Promise<AdminContextRow | null> {
   try {
-    const res = await db.query(
+    const res: QueryResult<AdminContextRow> = await db.query(
       'SELECT * FROM admin_context WHERE telegram_id = $1',
       [telegramId]
     );

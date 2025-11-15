@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.config.js
+*.d.ts
+.env
+.env.*
+

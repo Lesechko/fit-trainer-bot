@@ -50,6 +50,62 @@ export async function initializeSchema(): Promise<void> {
       )
     `);
 
+    // Migration: Add difficulty column if it doesn't exist (for existing databases)
+    await db.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'course_videos' AND column_name = 'difficulty'
+        ) THEN
+          -- Add the difficulty column
+          ALTER TABLE course_videos ADD COLUMN difficulty TEXT;
+        END IF;
+      END $$;
+    `);
+
+    // Migration: Update unique constraint to include difficulty if needed
+    await db.query(`
+      DO $$ 
+      DECLARE
+        constraint_name TEXT;
+      BEGIN
+        -- Check if difficulty column exists
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'course_videos' AND column_name = 'difficulty'
+        ) THEN
+          -- Check if we already have a constraint with all three columns
+          SELECT conname INTO constraint_name
+          FROM pg_constraint c
+          JOIN pg_class t ON c.conrelid = t.oid
+          WHERE t.relname = 'course_videos'
+            AND c.contype = 'u'
+            AND (
+              SELECT COUNT(DISTINCT a.attname)
+              FROM unnest(c.conkey) AS key
+              JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = key
+              WHERE a.attname IN ('course_id', 'day', 'difficulty')
+            ) = 3;
+          
+          -- If no constraint with all three columns exists, try to add it
+          IF constraint_name IS NULL THEN
+            BEGIN
+              ALTER TABLE course_videos ADD CONSTRAINT course_videos_course_id_day_difficulty_key 
+              UNIQUE (course_id, day, difficulty);
+            EXCEPTION 
+              WHEN duplicate_object THEN
+                -- Constraint might already exist with different name, that's okay
+                NULL;
+              WHEN OTHERS THEN
+                -- Any other error, log but don't fail
+                RAISE NOTICE 'Could not add unique constraint: %', SQLERRM;
+            END;
+          END IF;
+        END IF;
+      END $$;
+    `);
+
     await db.query(`
       CREATE TABLE IF NOT EXISTS user_courses (
         id SERIAL PRIMARY KEY,
