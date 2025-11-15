@@ -1,5 +1,6 @@
 import { Context } from 'telegraf';
 import { CourseVideoRow } from '../types';
+import { VIDEO_DIFFICULTY } from '../config';
 import {
   LISTVIDEOS_ERROR,
   LISTVIDEOS_EMPTY,
@@ -46,7 +47,7 @@ export async function listVideosCommandCallback(ctx: Context) {
     }
 
     const result: any = await db.query(
-      'SELECT cv.day, cv.file_id, c.slug FROM course_videos cv JOIN courses c ON c.id = cv.course_id WHERE cv.course_id = $1 ORDER BY cv.day',
+      'SELECT cv.id, cv.day, cv.file_id, cv.difficulty, c.slug FROM course_videos cv JOIN courses c ON c.id = cv.course_id WHERE cv.course_id = $1 ORDER BY cv.day, cv.difficulty NULLS FIRST',
       [adminContext.course_id]
     );
     const rows = result.rows as (CourseVideoRow & { slug: string })[];
@@ -56,7 +57,10 @@ export async function listVideosCommandCallback(ctx: Context) {
     }
 
     const list = rows
-      .map((r) => `День ${r.day}: ${r.file_id.substring(0, 20)}...`)
+      .map((r) => {
+        const difficultyText = r.difficulty ? ` [${r.difficulty}]` : '';
+        return `День ${r.day}${difficultyText}: ID ${r.id} (${r.file_id.substring(0, 20)}...)`;
+      })
       .join('\n');
     return ctx.reply(listVideos(list));
   } catch (err) {
@@ -69,15 +73,20 @@ export async function addVideoCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
-  if (parts.length !== 3) {
+  if (parts.length < 3 || parts.length > 4) {
     return ctx.reply(ADDVIDEO_USAGE);
   }
 
   const day = Number(parts[1]);
   const fileId = parts[2];
+  const difficulty = parts[3] || null; // VIDEO_DIFFICULTY.EASY, VIDEO_DIFFICULTY.HARD, or null for default
 
   if (!isValidDay(day)) {
     return ctx.reply(ADDVIDEO_BAD_DAY);
+  }
+
+  if (difficulty && !Object.values(VIDEO_DIFFICULTY).includes(difficulty as any)) {
+    return ctx.reply(`⚠️ Складність має бути "${VIDEO_DIFFICULTY.EASY}" або "${VIDEO_DIFFICULTY.HARD}"`);
   }
 
   try {
@@ -87,12 +96,14 @@ export async function addVideoCommandCallback(ctx: Context) {
     }
 
     const result: any = await db.query(
-      'INSERT INTO course_videos (course_id, day, file_id) VALUES ($1, $2, $3) ON CONFLICT (course_id, day) DO NOTHING',
-      [adminContext.course_id, day, fileId]
+      'INSERT INTO course_videos (course_id, day, file_id, difficulty) VALUES ($1, $2, $3, $4) ON CONFLICT (course_id, day, difficulty) DO UPDATE SET file_id = EXCLUDED.file_id RETURNING id',
+      [adminContext.course_id, day, fileId, difficulty]
     );
 
     if (result.rowCount > 0) {
-      ctx.reply(ADDVIDEO_SUCCESS(day));
+      const videoId = result.rows[0].id;
+      const difficultyText = difficulty ? ` (${difficulty}, ID: ${videoId})` : ` (ID: ${videoId})`;
+      ctx.reply(ADDVIDEO_SUCCESS(day) + difficultyText);
     } else {
       ctx.reply(ADDVIDEO_EXISTS(day));
     }

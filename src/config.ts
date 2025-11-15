@@ -29,3 +29,11 @@ export const DATABASE_URL: string = (() => {
 export const BOT_USERNAME = process.env.BOT_USERNAME || '';
 
 export const COURSES: CourseStaticConfig[] = [healthyJoints];
+
+// Video difficulty levels
+export const VIDEO_DIFFICULTY = {
+  EASY: 'easy',
+  HARD: 'hard',
+} as const;
+
+export type VideoDifficulty = typeof VIDEO_DIFFICULTY[keyof typeof VIDEO_DIFFICULTY] | null;

@@ -39,7 +39,7 @@ export const usersList = (list: string) =>
   `👥 Користувачі та їх прогрес:\n${list}`;
 
 // Video management
-export const ADDVIDEO_USAGE = '⚠️ Використай так: /addvideo <день> <file_id>';
+export const ADDVIDEO_USAGE = '⚠️ Використай так: /addvideo <день> <file_id> [easy|hard]\nПриклад: /addvideo 5 BAACAgI... easy';
 export const ADDVIDEO_BAD_DAY = '⚠️ Некоректний номер дня (1-10)';
 export const ADDVIDEO_ERROR = '⚠️ Помилка при додаванні відео';
 export const ADDVIDEO_SUCCESS = (day: number) =>

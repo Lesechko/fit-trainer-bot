@@ -56,11 +56,16 @@ export function redeemCommandCallback(bot: Telegraf<Context>) {
   };
 }
 
-async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string) {
+async function redeemWithCode(
+  bot: Telegraf<Context>,
+  ctx: Context,
+  code: string
+) {
   const telegramId = ctx.from!.id;
 
   try {
     // Ensure user exists and fetch internal user id
+    // Only update user data if it has actually changed (to avoid unnecessary updated_at changes)
     const userRes: any = await db.query(
       `INSERT INTO users (telegram_id, username, first_name, last_name, language_code, updated_at) 
        VALUES ($1, $2, $3, $4, $5, $6) 
@@ -69,7 +74,14 @@ async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string
          first_name = EXCLUDED.first_name,
          last_name = EXCLUDED.last_name,
          language_code = EXCLUDED.language_code,
-         updated_at = EXCLUDED.updated_at
+         updated_at = CASE 
+           WHEN users.username IS DISTINCT FROM EXCLUDED.username 
+             OR users.first_name IS DISTINCT FROM EXCLUDED.first_name
+             OR users.last_name IS DISTINCT FROM EXCLUDED.last_name
+             OR users.language_code IS DISTINCT FROM EXCLUDED.language_code
+           THEN EXCLUDED.updated_at
+           ELSE users.updated_at
+         END
        RETURNING id`,
       [
         telegramId,
@@ -90,50 +102,64 @@ async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string
 
     if (existingEnrollmentRes.rows.length > 0) {
       const existingCourse = existingEnrollmentRes.rows[0];
-      
+
       // Get course config to check total days
       const courseConfig = COURSES.find((c) => c.slug === existingCourse.slug);
+
       if (!courseConfig) {
         return ctx.reply(COURSE_NOT_FOUND);
       }
-      
+
       const totalDays = courseConfig.days.length;
-      
+
       // Check course progress
-      const progress = await getCourseProgress(userId, existingCourse.course_id, courseConfig);
-      
+      const progress = await getCourseProgress(
+        userId,
+        existingCourse.course_id,
+        courseConfig
+      );
+
       if (progress.isCompleted) {
         // Course is completed - offer to restart
         const restartButton = {
           text: RESTART_BUTTON_TEXT,
-          callback_data: `restart_${existingCourse.course_id}_${code}`
+          callback_data: `restart_${existingCourse.course_id}_${code}`,
         };
+
         const cancelButton = {
           text: CANCEL_BUTTON_TEXT,
-          callback_data: 'cancel_restart'
+          callback_data: 'cancel_restart',
         };
-        
+
         return ctx.reply(COURSE_COMPLETED_RESTART(existingCourse.title), {
           reply_markup: {
-            inline_keyboard: [[restartButton], [cancelButton]]
-          }
+            inline_keyboard: [[restartButton], [cancelButton]],
+          },
         });
       } else {
         // Course is in progress - offer to restart
         const restartButton = {
           text: RESTART_BUTTON_TEXT,
-          callback_data: `restart_${existingCourse.course_id}_${code}`
+          callback_data: `restart_${existingCourse.course_id}_${code}`,
         };
+
         const cancelButton = {
           text: CANCEL_BUTTON_TEXT,
-          callback_data: 'cancel_restart'
+          callback_data: 'cancel_restart',
         };
-        
-        return ctx.reply(COURSE_IN_PROGRESS_RESTART(existingCourse.title, progress.currentDay, totalDays), {
-          reply_markup: {
-            inline_keyboard: [[restartButton], [cancelButton]]
+
+        return ctx.reply(
+          COURSE_IN_PROGRESS_RESTART(
+            existingCourse.title,
+            progress.currentDay,
+            totalDays
+          ),
+          {
+            reply_markup: {
+              inline_keyboard: [[restartButton], [cancelButton]],
+            },
           }
-        });
+        );
       }
     }
 
@@ -207,13 +233,16 @@ async function redeemWithCode(bot: Telegraf<Context>, ctx: Context, code: string
   }
 }
 
-export async function restartCourseCallback(bot: Telegraf<Context>, ctx: Context) {
+export async function restartCourseCallback(
+  bot: Telegraf<Context>,
+  ctx: Context
+) {
   if (!ctx.from) {
     return;
   }
 
   const callbackData = (ctx.callbackQuery as any)?.data;
-  
+
   if (!callbackData || !callbackData.startsWith('restart_')) {
     return;
   }
@@ -249,7 +278,7 @@ export async function restartCourseCallback(bot: Telegraf<Context>, ctx: Context
       'DELETE FROM lesson_completions WHERE user_id = $1 AND course_id = $2',
       [userId, courseId]
     );
-    
+
     await db.query(
       'DELETE FROM user_courses WHERE user_id = $1 AND course_id = $2',
       [userId, courseId]
@@ -257,7 +286,7 @@ export async function restartCourseCallback(bot: Telegraf<Context>, ctx: Context
 
     // Now proceed with normal enrollment using the code
     await ctx.answerCbQuery('🔄 Курс перезапущено!');
-    
+
     // Call redeemWithCode with the extracted code
     return redeemWithCode(bot, ctx, code);
   } catch (error) {
@@ -330,12 +359,8 @@ export async function startDay1Callback(bot: Telegraf<Context>, ctx: Context) {
         inline_keyboard: [],
       });
     } catch (editError) {
-      // If editing fails, just answer the callback query
-      await ctx.answerCbQuery('✅ Перше відео надіслано!');
-      return;
+      console.error('Error editing message:', editError);
     }
-
-    await ctx.answerCbQuery('✅ Перше відео надіслано!');
   } catch (error) {
     console.error('Error in startDay1Callback:', error);
     await ctx.answerCbQuery('⚠️ Помилка при надсиланні відео');

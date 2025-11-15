@@ -10,6 +10,7 @@ import {
   startDay1Callback,
 } from './commands/user';
 import { customButtonCallback } from './commands/user/customButtons';
+import { difficultyChoiceCallback } from './commands/user/difficultyChoice';
 import {
   genAccessCodeCommandCallback,
   listUsersCommandCallback,
@@ -43,6 +44,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.action('cancel_restart', cancelRestartCallback);
   bot.action(/^start_day_1_\d+$/, (ctx) => startDay1Callback(bot, ctx));
   bot.action(/^custom_\d+_\d+_.+$/, (ctx) => customButtonCallback(bot, ctx));
+  bot.action(/^difficulty_\d+_\d+_(easy|hard)$/, (ctx) => difficultyChoiceCallback(bot, ctx));
 
   // Admin course management
   bot.command('genaccess', genAccessCodeCommandCallback);

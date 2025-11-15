@@ -30,7 +30,11 @@ import {
   SENDDAY_INVALID_DAY,
   SENDDAY_VIDEO_NOT_FOUND,
 } from '../messages';
-import { ensureFromAndAdmin, getCommandParts, getAdminCourseContext } from './helpers';
+import {
+  ensureFromAndAdmin,
+  getCommandParts,
+  getAdminCourseContext,
+} from './helpers';
 import { COURSES } from '../config';
 import { formatUserDisplayName } from '../services/userHelpers';
 import { calculateUserProgress } from '../services/courseService';
@@ -41,12 +45,13 @@ export async function listUsersCommandCallback(ctx: Context) {
 
   try {
     const adminContext = await getAdminCourseContext(ctx.from!.id);
-    
+
     if (!adminContext?.course_id) {
       return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
     }
 
-    const res: any = await db.query(`
+    const res: any = await db.query(
+      `
       SELECT 
         u.telegram_id, 
         u.username,
@@ -62,15 +67,17 @@ export async function listUsersCommandCallback(ctx: Context) {
       JOIN courses c ON c.id = uc.course_id
       WHERE uc.course_id = $1
       ORDER BY uc.created_at DESC
-    `, [adminContext.course_id]);
-    
-    const users = res.rows as { 
-      telegram_id: number; 
+    `,
+      [adminContext.course_id]
+    );
+
+    const users = res.rows as {
+      telegram_id: number;
       username: string | null;
       first_name: string | null;
       last_name: string | null;
       language_code: string | null;
-      start_date: string; 
+      start_date: string;
       enrolled_at: string;
       course_title: string;
       course_slug: string;
@@ -81,19 +88,21 @@ export async function listUsersCommandCallback(ctx: Context) {
     }
 
     // Get course config for days count
-    const courseConfig = COURSES.find(c => c.slug === users[0]?.course_slug);
+    const courseConfig = COURSES.find((c) => c.slug === users[0]?.course_slug);
     if (!courseConfig) {
       return ctx.reply('⚠️ Конфігурація курсу не знайдена');
     }
 
     // Format users list
-    const list = users.map(u => {
-      const { status } = calculateUserProgress(u.start_date, courseConfig);
-      const displayName = formatUserDisplayName(u);
-      
-      return `👤 ${displayName} (${u.telegram_id}) | ${status} | Почав: ${u.start_date}`;
-    }).join('\n');
-    
+    const list = users
+      .map((u) => {
+        const { status } = calculateUserProgress(u.start_date, courseConfig);
+        const displayName = formatUserDisplayName(u);
+
+        return `👤 ${displayName} (${u.telegram_id}) | ${status} | Почав: ${u.start_date}`;
+      })
+      .join('\n');
+
     return ctx.reply(usersList(list));
   } catch (e) {
     console.error(e);
@@ -126,16 +135,16 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
     const code =
       Math.random().toString(36).slice(2, 10) +
       Math.random().toString(36).slice(2, 6);
+
     const expiresAt = Number.isFinite(expiresDays)
       ? new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000)
       : null;
 
     await db.query(
-      'INSERT INTO course_access_codes (code, course_id, created_by, expires_at) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO course_access_codes (code, course_id, expires_at) VALUES ($1, $2, $3)',
       [
         code,
         course.id,
-        ctx.from!.id,
         expiresAt ? expiresAt.toISOString() : null,
       ]
     );
@@ -280,19 +289,22 @@ export async function removeUserCommandCallback(ctx: Context) {
 
   try {
     const adminContext = await getAdminCourseContext(ctx.from!.id);
-    
+
     if (!adminContext?.course_id) {
       return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
     }
 
     // Check if user exists in the current course
-    const userRes: any = await db.query(`
+    const userRes: any = await db.query(
+      `
       SELECT u.id, u.telegram_id, c.title as course_title
       FROM users u 
       JOIN user_courses uc ON u.id = uc.user_id 
       JOIN courses c ON c.id = uc.course_id
       WHERE u.telegram_id = $1 AND uc.course_id = $2
-    `, [telegramId, adminContext.course_id]);
+    `,
+      [telegramId, adminContext.course_id]
+    );
 
     const user = userRes.rows[0];
     if (!user) {
@@ -334,19 +346,22 @@ export function sendDayToUserCommandCallback(bot: Telegraf<Context>) {
 
     try {
       const adminContext = await getAdminCourseContext(ctx.from!.id);
-      
+
       if (!adminContext?.course_id) {
         return ctx.reply(CONTEXT_NOT_SET);
       }
 
       // Verify user is enrolled in this course
-      const userRes: any = await db.query(`
+      const userRes: any = await db.query(
+        `
         SELECT u.telegram_id, c.slug, c.id as course_id
         FROM users u
         JOIN user_courses uc ON u.id = uc.user_id
         JOIN courses c ON c.id = uc.course_id
         WHERE u.telegram_id = $1 AND uc.course_id = $2
-      `, [telegramId, adminContext.course_id]);
+      `,
+        [telegramId, adminContext.course_id]
+      );
 
       if (userRes.rows.length === 0) {
         return ctx.reply(SENDDAY_USER_NOT_FOUND(telegramId));

@@ -60,49 +60,34 @@ export function getMotivationMessage(
 }
 
 /**
- * Returns YYYY-MM-DD in course timezone, anchored to course dailyTime.
- * If user enrolls after dailyTime (in course TZ), start date is next day.
+ * Returns YYYY-MM-DD for today in course timezone.
+ * Since day 1 video is sent immediately after enrollment (via button),
+ * the start date should be the actual enrollment date, not the next day.
  */
 export function getEnrollmentStartDateForCourse(
   courseSlug: string,
   now: Date = new Date()
 ): string {
-  const courseConfig = COURSES.find((c) => c.slug === courseSlug);
   const timeZone = TIMEZONE || 'Europe/Kyiv';
-  const dailyTime = courseConfig?.dailyTime || '19:00';
 
-  const [sendHourStr, sendMinStr] = dailyTime.split(':');
-  const sendHour = Number(sendHourStr);
-  const sendMinute = Number(sendMinStr);
-
-  // Get current Y-M-D H:M in target timezone via formatToParts
+  // Get current date in course timezone
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,
-    hourCycle: 'h23',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
   }).formatToParts(now);
 
   const get = (type: string) => parts.find((p) => p.type === type)?.value || '';
   const year = Number(get('year'));
   const month = Number(get('month'));
   const day = Number(get('day'));
-  const hour = Number(get('hour'));
-  const minute = Number(get('minute'));
-
-  const afterSendTime =
-    hour > sendHour || (hour === sendHour && minute >= sendMinute);
 
   // Build date from TZ calendar components at UTC midnight
-  const baseUtc = Date.UTC(year, month - 1, day, 0, 0, 0);
-  const startUtc = new Date(
-    baseUtc + (afterSendTime ? 24 : 0) * 60 * 60 * 1000
-  );
+  const startUtc = Date.UTC(year, month - 1, day, 0, 0, 0);
+  const startDate = new Date(startUtc);
 
-  return startUtc.toISOString().split('T')[0];
+  return startDate.toISOString().split('T')[0];
 }
 
 /**

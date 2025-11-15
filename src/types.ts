@@ -23,6 +23,7 @@ export type CourseVideoRow = {
   course_id: number;
   day: number;
   file_id: string;
+  difficulty: 'easy' | 'hard' | null; // VIDEO_DIFFICULTY.EASY, VIDEO_DIFFICULTY.HARD, or NULL for default video
   created_at: string;
 };
 
@@ -38,7 +39,6 @@ export type CourseAccessCodeRow = {
   id: number;
   code: string;
   course_id: number;
-  created_by: number | null;
   created_at: string;
   expires_at: string | null;
   is_used: boolean;
@@ -75,6 +75,15 @@ export type CustomButton = {
   oneTime?: boolean; // If true, button disappears after first use (default: false)
 };
 
+// Difficulty choice configuration (asks user before sending video)
+export type DifficultyChoice = {
+  message: string; // Message to ask user (e.g., "Який рівень складності обираєш?")
+  easyButtonText?: string; // Text for easy button (default: "Легший")
+  hardButtonText?: string; // Text for hard button (default: "Складніший")
+  easyVideoId: number; // Database video ID (from course_videos table) for easy version
+  hardVideoId: number; // Database video ID (from course_videos table) for hard version
+};
+
 // Day-specific configuration
 export type CourseDayConfig = {
   day: number; // 1-based day number
@@ -83,6 +92,7 @@ export type CourseDayConfig = {
   motivationMessage?: string; // Day-specific motivation message (optional)
   autoSend?: boolean; // Whether to auto-send this day via scheduled job (default: true). Set to false for manual sends (e.g., day 1 via button)
   customButtons?: CustomButton[]; // Custom buttons for this day (e.g., extra video, resources, etc.)
+  difficultyChoice?: DifficultyChoice; // If set, asks user to choose difficulty before sending video (requires easyVideoFileId and hardVideoFileId)
   
   // Future extensibility examples:
   // dailyTime?: string; // Override course default for this day

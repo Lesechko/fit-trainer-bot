@@ -44,8 +44,9 @@ export async function initializeSchema(): Promise<void> {
         course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
         day INTEGER NOT NULL CHECK (day > 0),
         file_id VARCHAR(255) NOT NULL,
+        difficulty TEXT, -- VIDEO_DIFFICULTY.EASY, VIDEO_DIFFICULTY.HARD, or NULL for default video
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(course_id, day)
+        UNIQUE(course_id, day, difficulty)
       )
     `);
 
@@ -65,7 +66,6 @@ export async function initializeSchema(): Promise<void> {
         id SERIAL PRIMARY KEY,
         code VARCHAR(50) UNIQUE NOT NULL,
         course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expires_at TIMESTAMP,
         is_used BOOLEAN DEFAULT FALSE NOT NULL,

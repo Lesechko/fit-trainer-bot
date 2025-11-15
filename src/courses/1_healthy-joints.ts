@@ -65,6 +65,18 @@ export const healthyJoints: CourseStaticConfig = {
       motivationMessage: `Рух — найкращий антистрес 🌈
 Коли ми працюємо із суглобами, тіло виділяє ендорфіни — "гормони радості".
 Хай цей день буде легким і наповненим енергією! ✨`,
+      // Example: Difficulty choice - ask user before sending video
+      // 1. Add easy video: /addvideo 3 <file_id> easy
+      // 2. Add hard video: /addvideo 3 <file_id> hard
+      // 3. Check video IDs with /listvideos
+      // 4. Uncomment and add the video IDs below
+      // difficultyChoice: {
+      //   message: 'Який рівень складності обираєш сьогодні? 🤔',
+      //   easyButtonText: 'Легший',
+      //   hardButtonText: 'Складніший',
+      //   easyVideoId: 123, // Video ID from database (use /listvideos to see IDs)
+      //   hardVideoId: 124, // Video ID from database (use /listvideos to see IDs)
+      // },
     },
     {
       day: 4,
