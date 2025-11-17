@@ -50,28 +50,9 @@ export async function initializeSchema(): Promise<void> {
       )
     `);
 
-    // Migration: Remove difficulty column and fix constraints
+    // Migration: Migrate from difficulty-based to video_type-based schema
     try {
-      // Drop old constraints if they exist
-      await db.query(`
-        DO $$ 
-        BEGIN
-          IF EXISTS (
-            SELECT 1 FROM pg_constraint 
-            WHERE conname = 'course_videos_course_id_day_key'
-          ) THEN
-            ALTER TABLE course_videos DROP CONSTRAINT course_videos_course_id_day_key;
-          END IF;
-          IF EXISTS (
-            SELECT 1 FROM pg_constraint 
-            WHERE conname = 'course_videos_course_id_day_difficulty_key'
-          ) THEN
-            ALTER TABLE course_videos DROP CONSTRAINT course_videos_course_id_day_difficulty_key;
-          END IF;
-        END $$;
-      `);
-      
-      // Remove difficulty column if it exists
+      // Remove old difficulty column if it exists
       await db.query(`
         DO $$ 
         BEGIN
@@ -84,7 +65,7 @@ export async function initializeSchema(): Promise<void> {
         END $$;
       `);
       
-      // Add video_type column if it doesn't exist
+      // Add video_type column if it doesn't exist (DEFAULT 'daily' will set value for existing rows)
       await db.query(`
         DO $$ 
         BEGIN
@@ -97,19 +78,25 @@ export async function initializeSchema(): Promise<void> {
         END $$;
       `);
       
-      // Update constraint to include video_type
+      // Update constraints: drop old ones and add new one with video_type
       await db.query(`
         DO $$ 
         BEGIN
-          -- Drop old constraint if it exists
+          -- Drop old constraints if they exist
           IF EXISTS (
             SELECT 1 FROM pg_constraint 
             WHERE conname = 'course_videos_course_id_day_key'
           ) THEN
             ALTER TABLE course_videos DROP CONSTRAINT course_videos_course_id_day_key;
           END IF;
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint 
+            WHERE conname = 'course_videos_course_id_day_difficulty_key'
+          ) THEN
+            ALTER TABLE course_videos DROP CONSTRAINT course_videos_course_id_day_difficulty_key;
+          END IF;
           
-          -- Add new constraint with video_type
+          -- Add new constraint with video_type if it doesn't exist
           IF NOT EXISTS (
             SELECT 1 FROM pg_constraint 
             WHERE conname = 'course_videos_course_id_day_video_type_key'
@@ -121,7 +108,7 @@ export async function initializeSchema(): Promise<void> {
       `);
     } catch (migrationError) {
       // Migration errors are not critical - log and continue
-      console.warn('⚠️ Constraint migration warning (non-critical):', migrationError);
+      console.warn('⚠️ Schema migration warning (non-critical):', migrationError);
     }
 
     await db.query(`
