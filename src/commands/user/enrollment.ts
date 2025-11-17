@@ -1,13 +1,12 @@
 import { Context, Telegraf } from 'telegraf';
-import {
-  REDEEM_USAGE,
-  REDEEM_INVALID,
-  START_ASK_CODE,
-} from '../../messages';
+import { REDEEM_USAGE, REDEEM_INVALID, START_ASK_CODE } from '../../messages';
 import { getEnrollmentStartDateForCourse } from '../../services/courseService';
 import { ensureUserExists } from './utils/userUtils';
-import { handleExistingEnrollment, enrollUserInCourse } from './utils/enrollmentUtils';
-import { validateAndLoadCode } from './utils/codeUtils';
+import {
+  handleExistingEnrollment,
+  enrollUserInCourse,
+} from './utils/enrollmentUtils';
+import { validateAndLoadCode, processUsedCode } from './utils/codeUtils';
 import { sendEnrollmentConfirmation } from './utils/enrollmentNotifications';
 import { handleRestartCourse, handleStartDay1 } from './utils/callbackUtils';
 
@@ -17,7 +16,10 @@ export function startCommandCallback(bot: Telegraf<Context>) {
       return;
     }
 
-    const text = ctx.message && 'text' in ctx.message ? (ctx.message as { text: string }).text : undefined;
+    const text =
+      ctx.message && 'text' in ctx.message
+        ? (ctx.message as { text: string }).text
+        : undefined;
     const parts = (text || '').trim().split(/\s+/);
 
     if (parts.length === 2) {
@@ -34,7 +36,10 @@ export function redeemCommandCallback(bot: Telegraf<Context>) {
       return;
     }
 
-    const text = ctx.message && 'text' in ctx.message ? (ctx.message as { text: string }).text : undefined;
+    const text =
+      ctx.message && 'text' in ctx.message
+        ? (ctx.message as { text: string }).text
+        : undefined;
     const parts = (text || '').trim().split(/\s+/);
 
     if (parts.length !== 2) {
@@ -47,7 +52,6 @@ export function redeemCommandCallback(bot: Telegraf<Context>) {
   };
 }
 
-
 export async function redeemWithCode(
   bot: Telegraf<Context>,
   ctx: Context,
@@ -59,14 +63,28 @@ export async function redeemWithCode(
       return ctx.reply(REDEEM_INVALID);
     }
 
-    const shouldContinue = await handleExistingEnrollment(ctx, userId, code);
-    if (!shouldContinue) {
-      return;
+    const validationResult = await validateAndLoadCode(code, userId);
+
+    if (!validationResult.codeRow) {
+      return ctx.reply(REDEEM_INVALID);
     }
 
-    const codeRow = await validateAndLoadCode(code);
-    if (!codeRow) {
+    const codeRow = validationResult.codeRow;
+
+    if (validationResult.isUsed) {
+      const isAlreadyEnrolled = await processUsedCode(userId, codeRow);
+
+      if (isAlreadyEnrolled) {
+        return;
+      }
+
       return ctx.reply(REDEEM_INVALID);
+    }
+
+    const shouldContinue = await handleExistingEnrollment(ctx, userId, codeRow);
+
+    if (!shouldContinue) {
+      return;
     }
 
     const startDate = getEnrollmentStartDateForCourse(codeRow.slug);
@@ -86,9 +104,16 @@ export async function restartCourseCallback(
     return;
   }
 
-  const callbackData = 'data' in (ctx.callbackQuery || {}) ? (ctx.callbackQuery as { data: string }).data : undefined;
+  const callbackData =
+    'data' in (ctx.callbackQuery || {})
+      ? (ctx.callbackQuery as { data: string }).data
+      : undefined;
 
-  if (!callbackData || typeof callbackData !== 'string' || !callbackData.startsWith('restart_')) {
+  if (
+    !callbackData ||
+    typeof callbackData !== 'string' ||
+    !callbackData.startsWith('restart_')
+  ) {
     return;
   }
 
@@ -109,9 +134,16 @@ export async function startDay1Callback(bot: Telegraf<Context>, ctx: Context) {
     return;
   }
 
-  const callbackData = 'data' in (ctx.callbackQuery || {}) ? (ctx.callbackQuery as { data: string }).data : undefined;
+  const callbackData =
+    'data' in (ctx.callbackQuery || {})
+      ? (ctx.callbackQuery as { data: string }).data
+      : undefined;
 
-  if (!callbackData || typeof callbackData !== 'string' || !callbackData.startsWith('start_day_1_')) {
+  if (
+    !callbackData ||
+    typeof callbackData !== 'string' ||
+    !callbackData.startsWith('start_day_1_')
+  ) {
     return;
   }
 

@@ -11,12 +11,12 @@ import {
 } from '../../../messages';
 import { CourseAccessCodeRow } from '../../../types';
 import { getExistingEnrollment } from './userUtils';
-import { ExistingCourseRow } from './enrollmentTypes';
+import { CodeRow } from './enrollmentTypes';
 
 export async function cleanupCompletedCourse(
   userId: number,
   courseId: number,
-  code: string
+  codeRow: CodeRow
 ): Promise<void> {
   await db.query(
     'DELETE FROM lesson_completions WHERE user_id = $1 AND course_id = $2',
@@ -27,17 +27,16 @@ export async function cleanupCompletedCourse(
     [userId, courseId]
   );
 
-  const codeCheckRes: QueryResult<Pick<CourseAccessCodeRow, 'id' | 'course_id' | 'is_used' | 'used_by'>> = await db.query(
-    'SELECT id, course_id, is_used, used_by FROM course_access_codes WHERE code = $1',
-    [code]
-  );
+  if (codeRow.course_id === courseId && codeRow.is_used) {
+    const codeCheckRes: QueryResult<Pick<CourseAccessCodeRow, 'used_by'>> = await db.query(
+      'SELECT used_by FROM course_access_codes WHERE id = $1',
+      [codeRow.id]
+    );
 
-  if (codeCheckRes.rows.length > 0) {
-    const codeInfo = codeCheckRes.rows[0];
-    if (codeInfo && codeInfo.course_id === courseId && codeInfo.is_used && codeInfo.used_by === userId) {
+    if (codeCheckRes.rows.length > 0 && codeCheckRes.rows[0]?.used_by === userId) {
       await db.query(
         'UPDATE course_access_codes SET is_used = FALSE, used_by = NULL, used_at = NULL WHERE id = $1',
-        [codeInfo.id]
+        [codeRow.id]
       );
     }
   }
@@ -46,7 +45,7 @@ export async function cleanupCompletedCourse(
 export async function handleExistingEnrollment(
   ctx: Context,
   userId: number,
-  code: string
+  codeRow: CodeRow
 ): Promise<boolean> {
   const existingCourse = await getExistingEnrollment(userId);
   if (!existingCourse) {
@@ -66,14 +65,14 @@ export async function handleExistingEnrollment(
   );
 
   if (progress.isCompleted) {
-    await cleanupCompletedCourse(userId, existingCourse.course_id, code);
+    await cleanupCompletedCourse(userId, existingCourse.course_id, codeRow);
     return true;
   } else {
     const totalDays = courseConfig.days.length;
     const currentDay = Math.min(progress.currentDay, totalDays);
     const restartButton = {
       text: RESTART_BUTTON_TEXT,
-      callback_data: `restart_${existingCourse.course_id}_${code}`,
+      callback_data: `restart_${existingCourse.course_id}_${codeRow.code}`,
     };
     const cancelButton = {
       text: CANCEL_BUTTON_TEXT,
