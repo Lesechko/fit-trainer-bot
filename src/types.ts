@@ -23,7 +23,6 @@ export type CourseVideoRow = {
   course_id: number;
   day: number;
   file_id: string;
-  difficulty: 'easy' | 'hard' | null; // VIDEO_DIFFICULTY.EASY, VIDEO_DIFFICULTY.HARD, or NULL for default video
   created_at: string;
 };
 

@@ -2,7 +2,6 @@ import { Context } from 'telegraf';
 import type { Message } from 'telegraf/types';
 import { QueryResult } from 'pg';
 import { CourseVideoRow } from '../types';
-import { VIDEO_DIFFICULTY, VideoDifficulty } from '../config';
 import {
   LISTVIDEOS_ERROR,
   LISTVIDEOS_EMPTY,
@@ -11,7 +10,6 @@ import {
   ADDVIDEO_BAD_DAY,
   ADDVIDEO_ERROR,
   ADDVIDEO_SUCCESS,
-  ADDVIDEO_EXISTS,
   DELVIDEO_USAGE,
   DELVIDEO_ERROR,
   DELVIDEO_SUCCESS,
@@ -50,7 +48,7 @@ export async function listVideosCommandCallback(ctx: Context) {
 
     const result: QueryResult<CourseVideoRow & { slug: string }> =
       await db.query(
-        'SELECT cv.id, cv.day, cv.file_id, cv.difficulty, c.slug FROM course_videos cv JOIN courses c ON c.id = cv.course_id WHERE cv.course_id = $1 ORDER BY cv.day, cv.difficulty NULLS FIRST',
+        'SELECT cv.id, cv.day, cv.file_id, c.slug FROM course_videos cv JOIN courses c ON c.id = cv.course_id WHERE cv.course_id = $1 ORDER BY cv.day',
         [adminContext.course_id]
       );
     const rows = result.rows;
@@ -61,10 +59,7 @@ export async function listVideosCommandCallback(ctx: Context) {
 
     const list = rows
       .map((r) => {
-        const difficultyText = r.difficulty ? ` [${r.difficulty}]` : '';
-        return `День ${r.day}${difficultyText}: ID ${
-          r.id
-        } (${r.file_id.substring(0, 20)}...)`;
+        return `День ${r.day}: ID ${r.id} (${r.file_id.substring(0, 20)}...)`;
       })
       .join('\n');
     return ctx.reply(listVideos(list));
@@ -78,22 +73,15 @@ export async function addVideoCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
-  if (parts.length < 3 || parts.length > 4) {
+  if (parts.length !== 3) {
     return ctx.reply(ADDVIDEO_USAGE);
   }
 
   const day = Number(parts[1]);
   const fileId = parts[2];
-  const difficulty: VideoDifficulty = (parts[3] as VideoDifficulty) || null; // VIDEO_DIFFICULTY.EASY, VIDEO_DIFFICULTY.HARD, or null for default
 
   if (!isValidDay(day)) {
     return ctx.reply(ADDVIDEO_BAD_DAY);
-  }
-
-  if (difficulty && !Object.values(VIDEO_DIFFICULTY).includes(difficulty)) {
-    return ctx.reply(
-      `⚠️ Складність має бути "${VIDEO_DIFFICULTY.EASY}" або "${VIDEO_DIFFICULTY.HARD}"`
-    );
   }
 
   try {
@@ -102,21 +90,17 @@ export async function addVideoCommandCallback(ctx: Context) {
       return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
     }
 
+    // Simple: one video per day, overwrite if exists
     const result: QueryResult<{ id: number }> = await db.query(
-      'INSERT INTO course_videos (course_id, day, file_id, difficulty) VALUES ($1, $2, $3, $4) ON CONFLICT (course_id, day, difficulty) DO UPDATE SET file_id = EXCLUDED.file_id RETURNING id',
-      [adminContext.course_id, day, fileId, difficulty]
+      'INSERT INTO course_videos (course_id, day, file_id) VALUES ($1, $2, $3) ON CONFLICT (course_id, day) DO UPDATE SET file_id = EXCLUDED.file_id RETURNING id',
+      [adminContext.course_id, day, fileId]
     );
 
     if (result.rowCount && result.rowCount > 0) {
       const videoId = result.rows[0]?.id;
       if (videoId) {
-        const difficultyText = difficulty
-          ? ` (${difficulty}, ID: ${videoId})`
-          : ` (ID: ${videoId})`;
-        void ctx.reply(ADDVIDEO_SUCCESS(day) + difficultyText);
+        void ctx.reply(ADDVIDEO_SUCCESS(day) + ` (ID: ${videoId})`);
       }
-    } else {
-      void ctx.reply(ADDVIDEO_EXISTS(day));
     }
   } catch (err) {
     console.error(err);

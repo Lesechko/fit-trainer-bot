@@ -44,11 +44,62 @@ export async function initializeSchema(): Promise<void> {
         course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
         day INTEGER NOT NULL CHECK (day > 0),
         file_id VARCHAR(255) NOT NULL,
-        difficulty TEXT, -- VIDEO_DIFFICULTY.EASY, VIDEO_DIFFICULTY.HARD, or NULL for default video
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(course_id, day, difficulty)
+        UNIQUE(course_id, day)
       )
     `);
+
+    // Migration: Remove difficulty column and fix constraints
+    try {
+      // Drop old constraints if they exist
+      await db.query(`
+        DO $$ 
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint 
+            WHERE conname = 'course_videos_course_id_day_key'
+          ) THEN
+            ALTER TABLE course_videos DROP CONSTRAINT course_videos_course_id_day_key;
+          END IF;
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint 
+            WHERE conname = 'course_videos_course_id_day_difficulty_key'
+          ) THEN
+            ALTER TABLE course_videos DROP CONSTRAINT course_videos_course_id_day_difficulty_key;
+          END IF;
+        END $$;
+      `);
+      
+      // Remove difficulty column if it exists
+      await db.query(`
+        DO $$ 
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'course_videos' AND column_name = 'difficulty'
+          ) THEN
+            ALTER TABLE course_videos DROP COLUMN difficulty;
+          END IF;
+        END $$;
+      `);
+      
+      // Ensure correct constraint exists
+      await db.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint 
+            WHERE conname = 'course_videos_course_id_day_key'
+          ) THEN
+            ALTER TABLE course_videos ADD CONSTRAINT course_videos_course_id_day_key 
+            UNIQUE(course_id, day);
+          END IF;
+        END $$;
+      `);
+    } catch (migrationError) {
+      // Migration errors are not critical - log and continue
+      console.warn('⚠️ Constraint migration warning (non-critical):', migrationError);
+    }
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS user_courses (
