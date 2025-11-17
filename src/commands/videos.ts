@@ -7,7 +7,6 @@ import {
   LISTVIDEOS_EMPTY,
   listVideos,
   ADDVIDEO_USAGE,
-  ADDVIDEO_BAD_DAY,
   ADDVIDEO_ERROR,
   ADDVIDEO_SUCCESS,
   DELVIDEO_USAGE,
@@ -24,7 +23,6 @@ import { db } from '../db';
 import {
   ensureFromAndAdmin,
   getCommandParts,
-  isValidDay,
   getAdminCourseContext,
 } from './helpers';
 
@@ -48,7 +46,7 @@ export async function listVideosCommandCallback(ctx: Context) {
 
     const result: QueryResult<CourseVideoRow & { slug: string }> =
       await db.query(
-        'SELECT cv.id, cv.day, cv.file_id, c.slug FROM course_videos cv JOIN courses c ON c.id = cv.course_id WHERE cv.course_id = $1 ORDER BY cv.day',
+        'SELECT cv.id, cv.day, cv.file_id, cv.video_type, c.slug FROM course_videos cv JOIN courses c ON c.id = cv.course_id WHERE cv.course_id = $1 ORDER BY cv.video_type, cv.day',
         [adminContext.course_id]
       );
     const rows = result.rows;
@@ -59,7 +57,8 @@ export async function listVideosCommandCallback(ctx: Context) {
 
     const list = rows
       .map((r) => {
-        return `День ${r.day}: ID ${r.id} (${r.file_id.substring(0, 20)}...)`;
+        const typeLabel = r.video_type === 'reference' ? ' [reference]' : '';
+        return `День ${r.day}${typeLabel}: ID ${r.id} (${r.file_id.substring(0, 20)}...)`;
       })
       .join('\n');
     return ctx.reply(listVideos(list));
@@ -73,15 +72,22 @@ export async function addVideoCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
-  if (parts.length !== 3) {
+  if (parts.length < 3 || parts.length > 4) {
     return ctx.reply(ADDVIDEO_USAGE);
   }
 
   const day = Number(parts[1]);
   const fileId = parts[2];
+  const videoType = (parts[3] as 'daily' | 'reference') || 'daily';
 
-  if (!isValidDay(day)) {
-    return ctx.reply(ADDVIDEO_BAD_DAY);
+  // Allow any positive day number (database constraint: day > 0)
+  if (!Number.isFinite(day) || day < 1) {
+    return ctx.reply('⚠️ День має бути додатнім числом (1, 2, 3, ...)');
+  }
+
+  // Validate video_type
+  if (videoType !== 'daily' && videoType !== 'reference') {
+    return ctx.reply('⚠️ Тип відео має бути "daily" або "reference"');
   }
 
   try {
@@ -90,16 +96,17 @@ export async function addVideoCommandCallback(ctx: Context) {
       return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
     }
 
-    // Simple: one video per day, overwrite if exists
+    // Insert video with type, overwrite if exists for same course_id, day, and video_type
     const result: QueryResult<{ id: number }> = await db.query(
-      'INSERT INTO course_videos (course_id, day, file_id) VALUES ($1, $2, $3) ON CONFLICT (course_id, day) DO UPDATE SET file_id = EXCLUDED.file_id RETURNING id',
-      [adminContext.course_id, day, fileId]
+      'INSERT INTO course_videos (course_id, day, file_id, video_type) VALUES ($1, $2, $3, $4) ON CONFLICT (course_id, day, video_type) DO UPDATE SET file_id = EXCLUDED.file_id RETURNING id',
+      [adminContext.course_id, day, fileId, videoType]
     );
 
     if (result.rowCount && result.rowCount > 0) {
       const videoId = result.rows[0]?.id;
       if (videoId) {
-        void ctx.reply(ADDVIDEO_SUCCESS(day) + ` (ID: ${videoId})`);
+        const typeText = videoType === 'reference' ? ' (reference, ID: ' : ' (ID: ';
+        void ctx.reply(ADDVIDEO_SUCCESS(day) + typeText + videoId + ')');
       }
     }
   } catch (err) {
@@ -118,8 +125,9 @@ export async function delVideoCommandCallback(ctx: Context) {
 
   const day = Number(parts[1]);
 
-  if (!isValidDay(day)) {
-    return ctx.reply(ADDVIDEO_BAD_DAY);
+  // Allow any positive day number
+  if (!Number.isFinite(day) || day < 1) {
+    return ctx.reply('⚠️ День має бути додатнім числом (1, 2, 3, ...)');
   }
 
   try {

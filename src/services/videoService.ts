@@ -25,11 +25,11 @@ export async function sendDayVideoToUser(
       return;
     }
 
-    // Get video for this day
+    // Get video for this day (only daily videos, not reference videos)
     const videosRes: QueryResult<Pick<CourseVideoRow, 'day' | 'file_id'>> =
       await db.query(
-        'SELECT day, file_id FROM course_videos WHERE course_id = $1 AND day = $2',
-        [courseId, day]
+        'SELECT day, file_id FROM course_videos WHERE course_id = $1 AND day = $2 AND video_type = $3',
+        [courseId, day, 'daily']
       );
     const videoRow = videosRes.rows[0];
 
@@ -137,11 +137,11 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
 
       if (enrolled.length === 0) continue;
 
-      // Check if videos exist for this course
+      // Check if videos exist for this course (only daily videos, not reference videos)
       const videosRes: QueryResult<Pick<CourseVideoRow, 'day' | 'file_id'>> =
         await db.query(
-          'SELECT day, file_id FROM course_videos WHERE course_id = $1 ORDER BY day',
-          [course.id]
+          'SELECT day, file_id FROM course_videos WHERE course_id = $1 AND video_type = $2 ORDER BY day',
+          [course.id, 'daily']
         );
       const videos = videosRes.rows;
 

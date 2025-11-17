@@ -370,10 +370,10 @@ export function sendDayToUserCommandCallback(bot: Telegraf<Context>) {
       const courseSlug = userRes.rows[0].slug;
       const courseId = userRes.rows[0].course_id;
 
-      // Check if video exists for this day
+      // Check if video exists for this day (only daily videos)
       const videoRes: any = await db.query(
-        'SELECT day FROM course_videos WHERE course_id = $1 AND day = $2',
-        [courseId, day]
+        'SELECT day FROM course_videos WHERE course_id = $1 AND day = $2 AND video_type = $3',
+        [courseId, day, 'daily']
       );
 
       if (videoRes.rows.length === 0) {

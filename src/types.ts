@@ -23,6 +23,7 @@ export type CourseVideoRow = {
   course_id: number;
   day: number;
   file_id: string;
+  video_type: 'daily' | 'reference';
   created_at: string;
 };
 

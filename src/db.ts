@@ -44,8 +44,9 @@ export async function initializeSchema(): Promise<void> {
         course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
         day INTEGER NOT NULL CHECK (day > 0),
         file_id VARCHAR(255) NOT NULL,
+        video_type TEXT DEFAULT 'daily' CHECK (video_type IN ('daily', 'reference')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(course_id, day)
+        UNIQUE(course_id, day, video_type)
       )
     `);
 
@@ -83,16 +84,38 @@ export async function initializeSchema(): Promise<void> {
         END $$;
       `);
       
-      // Ensure correct constraint exists
+      // Add video_type column if it doesn't exist
       await db.query(`
         DO $$ 
         BEGIN
           IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'course_videos' AND column_name = 'video_type'
+          ) THEN
+            ALTER TABLE course_videos ADD COLUMN video_type TEXT DEFAULT 'daily' CHECK (video_type IN ('daily', 'reference'));
+          END IF;
+        END $$;
+      `);
+      
+      // Update constraint to include video_type
+      await db.query(`
+        DO $$ 
+        BEGIN
+          -- Drop old constraint if it exists
+          IF EXISTS (
             SELECT 1 FROM pg_constraint 
             WHERE conname = 'course_videos_course_id_day_key'
           ) THEN
-            ALTER TABLE course_videos ADD CONSTRAINT course_videos_course_id_day_key 
-            UNIQUE(course_id, day);
+            ALTER TABLE course_videos DROP CONSTRAINT course_videos_course_id_day_key;
+          END IF;
+          
+          -- Add new constraint with video_type
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint 
+            WHERE conname = 'course_videos_course_id_day_video_type_key'
+          ) THEN
+            ALTER TABLE course_videos ADD CONSTRAINT course_videos_course_id_day_video_type_key 
+            UNIQUE(course_id, day, video_type);
           END IF;
         END $$;
       `);
