@@ -17,7 +17,10 @@ export function ensureFromAndAdmin(ctx: Context): boolean {
 }
 
 export function getCommandParts(ctx: Context): string[] {
-  const text = (ctx.message as any)?.text as string | undefined;
+  const message = ctx.message;
+  const text = message && typeof message === 'object' && 'text' in message
+    ? (message as { text: string }).text
+    : undefined;
 
   return (text || '').trim().split(/\s+/);
 }

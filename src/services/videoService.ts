@@ -1,12 +1,11 @@
 import { Context, Telegraf } from 'telegraf';
+import { QueryResult } from 'pg';
 import { db } from '../db';
 import { COURSES, VIDEO_DIFFICULTY } from '../config';
-import {
-  dayCaption,
-  COMPLETION_BUTTON_TEXT,
-} from '../messages';
+import { dayCaption, COMPLETION_BUTTON_TEXT } from '../messages';
 import { calculateProgramDay, getDayConfig } from './courseService';
 import { isLessonCompleted } from './lessonService';
+import { CourseVideoRow, UserRow, CourseRow, UserCourseRow } from '../types';
 
 /**
  * Send a specific day's video to a user
@@ -27,10 +26,11 @@ export async function sendDayVideoToUser(
     }
 
     // Get video for this day (default video, difficulty = null)
-    const videosRes: any = await db.query(
-      'SELECT day, file_id FROM course_videos WHERE course_id = $1 AND day = $2 AND difficulty IS NULL',
-      [courseId, day]
-    );
+    const videosRes: QueryResult<Pick<CourseVideoRow, 'day' | 'file_id'>> =
+      await db.query(
+        'SELECT day, file_id FROM course_videos WHERE course_id = $1 AND day = $2 AND difficulty IS NULL',
+        [courseId, day]
+      );
     const videoRow = videosRes.rows[0];
 
     if (!videoRow?.file_id) {
@@ -51,7 +51,7 @@ export async function sendDayVideoToUser(
     // Send video description if available
     if (dayConfig?.videoDescription) {
       // Get user's internal ID to check completion status
-      const userRes: any = await db.query(
+      const userRes: QueryResult<Pick<UserRow, 'id'>> = await db.query(
         'SELECT id FROM users WHERE telegram_id = $1',
         [telegramId]
       );
@@ -59,14 +59,16 @@ export async function sendDayVideoToUser(
       if (userRes.rows.length === 0) return;
 
       const userId = userRes.rows[0].id;
-      
+
       // Build buttons array
       const buttons: Array<{ text: string; callback_data: string }> = [];
-      
+
       // Add completion button if tracking is enabled and lesson not completed
-      const isCompletionTrackingEnabled = courseConfig.trackLessonCompletion !== false;
+      const isCompletionTrackingEnabled =
+        courseConfig.trackLessonCompletion !== false;
       if (isCompletionTrackingEnabled) {
         const isCompleted = await isLessonCompleted(userId, courseId, day);
+
         if (!isCompleted) {
           buttons.push({
             text: COMPLETION_BUTTON_TEXT,
@@ -74,7 +76,7 @@ export async function sendDayVideoToUser(
           });
         }
       }
-      
+
       // Add custom buttons (always show - prevent multiple clicks in handler, not here)
       // This allows admin resends and daily scheduler to show buttons again
       if (dayConfig?.customButtons && dayConfig.customButtons.length > 0) {
@@ -85,7 +87,7 @@ export async function sendDayVideoToUser(
           });
         }
       }
-      
+
       // Send description with buttons if any, otherwise just description
       if (buttons.length > 0) {
         await bot.telegram.sendMessage(telegramId, dayConfig.videoDescription, {
@@ -111,10 +113,9 @@ export async function sendDayVideoToUser(
 export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
   try {
     // Multi-course: iterate each course, send to enrolled users only
-    const courseRows: any = await db.query(
-      'SELECT id, slug FROM courses WHERE is_active = TRUE'
-    );
-    const courses = courseRows.rows as { id: number; slug: string }[];
+    const courseRows: QueryResult<Pick<CourseRow, 'id' | 'slug'>> =
+      await db.query('SELECT id, slug FROM courses WHERE is_active = TRUE');
+    const courses = courseRows.rows;
 
     for (const course of courses) {
       // Find course config
@@ -126,60 +127,68 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
       if (!courseConfig.dailyTime) continue;
 
       // users enrolled to this course with start_date
-      const ucRes: any = await db.query(
+      const ucRes: QueryResult<
+        Pick<UserRow, 'telegram_id'> & Pick<UserCourseRow, 'start_date'>
+      > = await db.query(
         'SELECT u.telegram_id, uc.start_date FROM user_courses uc JOIN users u ON u.id = uc.user_id WHERE uc.course_id = $1',
         [course.id]
       );
-      const enrolled = ucRes.rows as {
-        telegram_id: number;
-        start_date: string;
-      }[];
+      const enrolled = ucRes.rows;
 
       if (enrolled.length === 0) continue;
 
       // Check if videos exist for this course (only default videos, difficulty = null)
-      const videosRes: any = await db.query(
-        'SELECT day, file_id FROM course_videos WHERE course_id = $1 AND difficulty IS NULL ORDER BY day',
-        [course.id]
-      );
-      const videos = videosRes.rows as { day: number; file_id: string }[];
+      const videosRes: QueryResult<Pick<CourseVideoRow, 'day' | 'file_id'>> =
+        await db.query(
+          'SELECT day, file_id FROM course_videos WHERE course_id = $1 AND difficulty IS NULL ORDER BY day',
+          [course.id]
+        );
+      const videos = videosRes.rows;
 
       if (videos.length === 0) continue;
 
       const sends = enrolled.map(async (user) => {
         const day = calculateProgramDay(user.start_date);
-        
+
         // Get day-specific configuration
         const dayConfig = getDayConfig(courseConfig, day);
-        
+
         // Skip if this day is configured to not auto-send (e.g., day 1 sent via button)
         if (dayConfig?.autoSend === false) {
           return Promise.resolve();
         }
-        
+
         // If day has difficulty choice, send message with buttons instead of video
         if (dayConfig?.difficultyChoice) {
           const difficultyChoice = dayConfig.difficultyChoice;
           const easyText = difficultyChoice.easyButtonText || 'Легший';
           const hardText = difficultyChoice.hardButtonText || 'Складніший';
-          
-          return bot.telegram.sendMessage(user.telegram_id, difficultyChoice.message, {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: easyText, callback_data: `difficulty_${course.id}_${day}_${VIDEO_DIFFICULTY.EASY}` },
-                  { text: hardText, callback_data: `difficulty_${course.id}_${day}_${VIDEO_DIFFICULTY.HARD}` },
+
+          return bot.telegram
+            .sendMessage(user.telegram_id, difficultyChoice.message, {
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    {
+                      text: easyText,
+                      callback_data: `difficulty_${course.id}_${day}_${VIDEO_DIFFICULTY.EASY}`,
+                    },
+                    {
+                      text: hardText,
+                      callback_data: `difficulty_${course.id}_${day}_${VIDEO_DIFFICULTY.HARD}`,
+                    },
+                  ],
                 ],
-              ],
-            },
-          }).catch((sendErr: Error) => {
-            console.error(
-              `Помилка надсилання запиту на складність для ${user.telegram_id}:`,
-              sendErr.message
-            );
-          });
+              },
+            })
+            .catch((sendErr: Error) => {
+              console.error(
+                `Помилка надсилання запиту на складність для ${user.telegram_id}:`,
+                sendErr.message
+              );
+            });
         }
-        
+
         // Check if video exists for this day
         const video = videos.find((v) => v.day === day);
         if (!video) return Promise.resolve();
@@ -206,4 +215,3 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
     throw error;
   }
 }
-
