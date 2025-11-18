@@ -41,7 +41,7 @@ export async function difficultyChoiceCallback(
     if (
       !Number.isFinite(courseId) ||
       !Number.isFinite(day) ||
-      !Object.values(VIDEO_DIFFICULTY).includes(difficulty)
+      !(Object.values(VIDEO_DIFFICULTY) as readonly string[]).includes(difficulty)
     ) {
       return ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
     }
