@@ -17,7 +17,10 @@ export async function difficultyChoiceCallback(
     return;
   }
 
-  const callbackData = (ctx.callbackQuery as any)?.data;
+  const callbackData =
+    ctx.callbackQuery && 'data' in ctx.callbackQuery
+      ? ctx.callbackQuery.data
+      : undefined;
 
   if (!callbackData || !callbackData.startsWith('difficulty_')) {
     return;
