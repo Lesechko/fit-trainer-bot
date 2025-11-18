@@ -40,7 +40,7 @@ export const usersList = (list: string) =>
 
 // Video management
 export const ADDVIDEO_USAGE = '⚠️ Використай так: /addvideo <день> <file_id>\nПриклад: /addvideo 5 BAACAgI...';
-export const ADDREFERENCE_USAGE = '⚠️ Використай так: /addreference <file_id>\nПриклад: /addreference BAACAgI...\n\nПримітка: Reference відео використовуються для hard/easy опцій. Отримай ID через /listvideos та вкажи easyVideoId/hardVideoId у конфігурації курсу.';
+export const ADDREFERENCE_USAGE = '⚠️ Використай так: /addref <file_id>\nПриклад: /addref BAACAgI...\n\nПримітка: Reference відео використовуються для hard/easy опцій. Отримай ID через /listvideos та вкажи easyVideoId/hardVideoId у конфігурації курсу.';
 export const ADDVIDEO_ERROR = '⚠️ Помилка при додаванні відео';
 export const ADDVIDEO_SUCCESS = (day: number) =>
   `✅ Відео для дня ${day} додано до поточного курсу`;
@@ -81,7 +81,7 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 
 *Управління відео (для поточного курсу):*
 /addvideo <день> <file_id> — додати daily відео для дня
-/addreference <file_id> — додати reference відео (для hard/easy опцій)
+/addref <file_id> — додати reference відео (для hard/easy опцій)
 /listvideos — список відео в поточному курсі (показує ID для використання в конфігурації)
 /delvideo <день> — видалити відео для дня
 /sendvideo <file_id> — надіслати відео всім користувачам поточного курсу

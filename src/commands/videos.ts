@@ -116,7 +116,7 @@ export async function addReferenceVideoCommandCallback(ctx: Context) {
 
   const parts = getCommandParts(ctx);
   
-  // Format: /addreference <file_id> - reference video (no day needed)
+  // Format: /addref <file_id> - reference video (no day needed)
   if (parts.length !== 2) {
     return ctx.reply(ADDREFERENCE_USAGE);
   }
