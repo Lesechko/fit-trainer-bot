@@ -5,7 +5,44 @@ import { COURSES, VIDEO_DIFFICULTY } from '../config';
 import { dayCaption, COMPLETION_BUTTON_TEXT } from '../messages';
 import { calculateProgramDay, getDayConfig } from './courseService';
 import { isLessonCompleted } from './lessonService';
-import { CourseVideoRow, UserRow, CourseRow, UserCourseRow } from '../types';
+import {
+  CourseVideoRow,
+  UserRow,
+  CourseRow,
+  UserCourseRow,
+  DifficultyChoice,
+} from '../types';
+
+/**
+ * Send difficulty choice message with buttons to a user
+ */
+export async function sendDifficultyChoiceMessage(
+  bot: Telegraf<Context>,
+  telegramId: number,
+  courseId: number,
+  day: number,
+  difficultyChoice: DifficultyChoice
+): Promise<void> {
+  const easyText = difficultyChoice.easyButtonText || 'Легший';
+  const hardText = difficultyChoice.hardButtonText || 'Складніший';
+
+  await bot.telegram.sendMessage(telegramId, difficultyChoice.message, {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: easyText,
+            callback_data: `difficulty_${courseId}_${day}_${VIDEO_DIFFICULTY.EASY}`,
+          },
+          {
+            text: hardText,
+            callback_data: `difficulty_${courseId}_${day}_${VIDEO_DIFFICULTY.HARD}`,
+          },
+        ],
+      ],
+    },
+  });
+}
 
 /**
  * Send a specific day's video to a user
@@ -160,33 +197,18 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
 
         // If day has difficulty choice, send message with buttons instead of video
         if (dayConfig?.difficultyChoice) {
-          const difficultyChoice = dayConfig.difficultyChoice;
-          const easyText = difficultyChoice.easyButtonText || 'Легший';
-          const hardText = difficultyChoice.hardButtonText || 'Складніший';
-
-          return bot.telegram
-            .sendMessage(user.telegram_id, difficultyChoice.message, {
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    {
-                      text: easyText,
-                      callback_data: `difficulty_${course.id}_${day}_${VIDEO_DIFFICULTY.EASY}`,
-                    },
-                    {
-                      text: hardText,
-                      callback_data: `difficulty_${course.id}_${day}_${VIDEO_DIFFICULTY.HARD}`,
-                    },
-                  ],
-                ],
-              },
-            })
-            .catch((sendErr: Error) => {
-              console.error(
-                `Помилка надсилання запиту на складність для ${user.telegram_id}:`,
-                sendErr.message
-              );
-            });
+          return sendDifficultyChoiceMessage(
+            bot,
+            user.telegram_id,
+            course.id,
+            day,
+            dayConfig.difficultyChoice
+          ).catch((sendErr: Error) => {
+            console.error(
+              `Помилка надсилання запиту на складність для ${user.telegram_id}:`,
+              sendErr.message
+            );
+          });
         }
 
         // Check if video exists for this day

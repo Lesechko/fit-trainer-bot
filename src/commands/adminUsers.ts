@@ -37,8 +37,11 @@ import {
 } from './helpers';
 import { COURSES } from '../config';
 import { formatUserDisplayName } from '../services/userHelpers';
-import { calculateUserProgress } from '../services/courseService';
-import { sendDayVideoToUser } from '../services/videoService';
+import { calculateUserProgress, getDayConfig } from '../services/courseService';
+import {
+  sendDayVideoToUser,
+  sendDifficultyChoiceMessage,
+} from '../services/videoService';
 
 export async function listUsersCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx)) return;
@@ -369,6 +372,27 @@ export function sendDayToUserCommandCallback(bot: Telegraf<Context>) {
 
       const courseSlug = userRes.rows[0].slug;
       const courseId = userRes.rows[0].course_id;
+
+      // Get course config and day config
+      const courseConfig = COURSES.find((c) => c.slug === courseSlug);
+      if (!courseConfig) {
+        return ctx.reply('⚠️ Конфігурація курсу не знайдена');
+      }
+
+      const dayConfig = getDayConfig(courseConfig, day);
+
+      // If day has difficulty choice, send message with buttons instead of video
+      if (dayConfig?.difficultyChoice) {
+        await sendDifficultyChoiceMessage(
+          bot,
+          telegramId,
+          courseId,
+          day,
+          dayConfig.difficultyChoice
+        );
+
+        return ctx.reply(SENDDAY_SUCCESS(telegramId, day));
+      }
 
       // Check if video exists for this day (only daily videos)
       const videoRes: any = await db.query(
