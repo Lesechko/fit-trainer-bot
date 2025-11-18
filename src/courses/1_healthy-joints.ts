@@ -108,8 +108,8 @@ export const healthyJoints: CourseStaticConfig = {
           'Який рівень обираєш сьогодні? 🤔 Слухай тіло — і рухайся у своєму темпі.',
         easyButtonText: 'Базовий рівень',
         hardButtonText: 'Просунутий рівень',
-        easyVideoId: 123,
-        hardVideoId: 124,
+        easyVideoId: 13,
+        hardVideoId: 14,
       },
     },
     {
