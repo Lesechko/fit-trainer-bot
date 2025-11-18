@@ -9,6 +9,7 @@ import {
   ADDVIDEO_USAGE,
   ADDVIDEO_ERROR,
   ADDVIDEO_SUCCESS,
+  ADDREFERENCE_USAGE,
   DELVIDEO_USAGE,
   DELVIDEO_ERROR,
   DELVIDEO_SUCCESS,
@@ -20,8 +21,6 @@ import {
 } from '../messages';
 import { isAdmin } from '../services/userService';
 import { db } from '../db';
-import { COURSES } from '../config';
-import { getDayConfig } from '../services/courseService';
 import {
   ensureFromAndAdmin,
   getCommandParts,
@@ -74,22 +73,18 @@ export async function addVideoCommandCallback(ctx: Context) {
   if (!ensureFromAndAdmin(ctx)) return;
 
   const parts = getCommandParts(ctx);
-  if (parts.length < 3 || parts.length > 4) {
+  
+  // Format: /addvideo <day> <file_id> - daily video for that day
+  if (parts.length !== 3) {
     return ctx.reply(ADDVIDEO_USAGE);
   }
 
   const day = Number(parts[1]);
   const fileId = parts[2];
-  const manualVideoType = parts[3] as 'daily' | 'reference' | undefined;
-
-  // Allow any positive day number (database constraint: day > 0)
+  
+  // Validate day number
   if (!Number.isFinite(day) || day < 1) {
     return ctx.reply('⚠️ День має бути додатнім числом (1, 2, 3, ...)');
-  }
-
-  // Validate manual video_type if provided
-  if (manualVideoType && manualVideoType !== 'daily' && manualVideoType !== 'reference') {
-    return ctx.reply('⚠️ Тип відео має бути "daily" або "reference"');
   }
 
   try {
@@ -98,46 +93,60 @@ export async function addVideoCommandCallback(ctx: Context) {
       return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
     }
 
-    // Get course slug to find course config
-    const courseRes: QueryResult<{ slug: string }> = await db.query(
-      'SELECT slug FROM courses WHERE id = $1',
-      [adminContext.course_id]
-    );
-
-    if (courseRes.rows.length === 0) {
-      return ctx.reply('⚠️ Курс не знайдено');
-    }
-
-    const courseSlug = courseRes.rows[0].slug;
-
-    // Auto-detect video_type: if day exists in course config -> 'daily', otherwise -> 'reference'
-    let videoType: 'daily' | 'reference';
-    if (manualVideoType) {
-      // Manual override if provided
-      videoType = manualVideoType;
-    } else {
-      // Auto-detect: check if day exists in course config
-      const courseConfig = COURSES.find((c) => c.slug === courseSlug);
-      if (courseConfig) {
-        const dayConfig = getDayConfig(courseConfig, day);
-        videoType = dayConfig ? 'daily' : 'reference';
-      } else {
-        // If course config not found, default to 'daily' for safety
-        videoType = 'daily';
-      }
-    }
-
-    // Insert video with type, overwrite if exists for same course_id, day, and video_type
+    // Insert daily video, overwrite if exists for same course_id, day, and video_type
     const result: QueryResult<{ id: number }> = await db.query(
       'INSERT INTO course_videos (course_id, day, file_id, video_type) VALUES ($1, $2, $3, $4) ON CONFLICT (course_id, day, video_type) DO UPDATE SET file_id = EXCLUDED.file_id RETURNING id',
-      [adminContext.course_id, day, fileId, videoType]
+      [adminContext.course_id, day, fileId, 'daily']
     );
 
     if (result.rowCount && result.rowCount > 0) {
       const videoId = result.rows[0]?.id;
       if (videoId) {
-        const typeText = videoType === 'reference' ? ' (reference, ID: ' : ' (daily, ID: ';
-        void ctx.reply(ADDVIDEO_SUCCESS(day) + typeText + videoId + ')');
+        void ctx.reply(ADDVIDEO_SUCCESS(day) + ` (ID: ${videoId})`);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    void ctx.reply(ADDVIDEO_ERROR);
+  }
+}
+
+export async function addReferenceVideoCommandCallback(ctx: Context) {
+  if (!ensureFromAndAdmin(ctx)) return;
+
+  const parts = getCommandParts(ctx);
+  
+  // Format: /addreference <file_id> - reference video (no day needed)
+  if (parts.length !== 2) {
+    return ctx.reply(ADDREFERENCE_USAGE);
+  }
+
+  const fileId = parts[1];
+
+  try {
+    const adminContext = await getAdminCourseContext(ctx.from!.id);
+    if (!adminContext?.course_id) {
+      return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
+    }
+
+    // Find the next available day number for reference videos (start from 1000)
+    const maxDayRes: QueryResult<{ max_day: number | null }> = await db.query(
+      'SELECT MAX(day) as max_day FROM course_videos WHERE course_id = $1 AND video_type = $2',
+      [adminContext.course_id, 'reference']
+    );
+    const maxDay = maxDayRes.rows[0]?.max_day;
+    const day = maxDay && maxDay >= 1000 ? maxDay + 1 : 1000;
+
+    // Insert reference video
+    const result: QueryResult<{ id: number }> = await db.query(
+      'INSERT INTO course_videos (course_id, day, file_id, video_type) VALUES ($1, $2, $3, $4) ON CONFLICT (course_id, day, video_type) DO UPDATE SET file_id = EXCLUDED.file_id RETURNING id',
+      [adminContext.course_id, day, fileId, 'reference']
+    );
+
+    if (result.rowCount && result.rowCount > 0) {
+      const videoId = result.rows[0]?.id;
+      if (videoId) {
+        void ctx.reply(`✅ Reference відео додано (ID: ${videoId})`);
       }
     }
   } catch (err) {

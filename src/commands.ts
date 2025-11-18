@@ -25,6 +25,7 @@ import {
   videoUploadCallback,
   listVideosCommandCallback,
   addVideoCommandCallback,
+  addReferenceVideoCommandCallback,
   delVideoCommandCallback,
   sendVideoBroadcastCommandCallback,
 } from './commands/videos';
@@ -60,6 +61,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.on(message('video'), videoUploadCallback);
   bot.command('listvideos', listVideosCommandCallback);
   bot.command('addvideo', addVideoCommandCallback);
+  bot.command('addreference', addReferenceVideoCommandCallback);
   bot.command('delvideo', delVideoCommandCallback);
   bot.command('sendvideo', sendVideoBroadcastCommandCallback);
 
