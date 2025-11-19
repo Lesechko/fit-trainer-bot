@@ -30,7 +30,9 @@ export async function sendEnrollmentConfirmation(
   void ctx.reply(REDEEM_OK(codeRow.slug));
 
   if (course?.welcome) {
-    await ctx.reply(course.welcome);
+    await ctx.reply(course.welcome, {
+      parse_mode: 'HTML',
+    });
   }
 
   const startButton = {

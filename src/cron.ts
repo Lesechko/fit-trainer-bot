@@ -72,7 +72,9 @@ export function scheduleDaily(bot: Telegraf<Context>) {
               }
 
               return bot.telegram
-                .sendMessage(u.telegram_id, text)
+                .sendMessage(u.telegram_id, text, {
+                  parse_mode: 'HTML',
+                })
                 .catch((e: Error) =>
                   console.error('Motivation send failed:', e.message)
                 );

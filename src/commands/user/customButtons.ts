@@ -1,4 +1,5 @@
 import { Context, Telegraf } from 'telegraf';
+import type { InlineKeyboardButton } from '@telegraf/types/markup';
 import { db } from '../../db';
 import { COURSES } from '../../config';
 import { getDayConfig } from '../../services/courseService';
@@ -6,7 +7,10 @@ import { getDayConfig } from '../../services/courseService';
 /**
  * Handle custom button callbacks (e.g., extra videos, messages, URLs)
  */
-export async function customButtonCallback(bot: Telegraf<Context>, ctx: Context) {
+export async function customButtonCallback(
+  bot: Telegraf<Context>,
+  ctx: Context
+) {
   if (!ctx.from) {
     return;
   }
@@ -81,28 +85,39 @@ export async function customButtonCallback(bot: Telegraf<Context>, ctx: Context)
     switch (customButton.action.type) {
       case 'video': {
         // Send extra video
-        await bot.telegram.sendVideo(telegramId, customButton.action.videoFileId);
-        
+        await bot.telegram.sendVideo(
+          telegramId,
+          customButton.action.videoFileId
+        );
+
         // Send optional message after video
         if (customButton.action.message) {
-          await bot.telegram.sendMessage(telegramId, customButton.action.message);
+          await bot.telegram.sendMessage(
+            telegramId,
+            customButton.action.message,
+            {
+              parse_mode: 'HTML',
+            }
+          );
         }
         break;
       }
-      
+
       case 'message': {
         // Send text message
-        await bot.telegram.sendMessage(telegramId, customButton.action.text);
+        await bot.telegram.sendMessage(telegramId, customButton.action.text, {
+          parse_mode: 'HTML',
+        });
         break;
       }
-      
+
       case 'url': {
         // For URL buttons, Telegram handles them natively
         // But we can still track usage
         await ctx.answerCbQuery('', { url: customButton.action.url });
         break;
       }
-      
+
       default:
         return ctx.answerCbQuery('⚠️ Невідомий тип дії');
     }
@@ -110,20 +125,30 @@ export async function customButtonCallback(bot: Telegraf<Context>, ctx: Context)
     // For one-time buttons: remove button from message after use (no DB tracking needed)
     if (customButton.oneTime) {
       try {
-        const currentKeyboard = (ctx.callbackQuery?.message as any)?.reply_markup?.inline_keyboard?.[0] || [];
-        const remainingButtons = currentKeyboard.filter(
-          (btn: any) => btn.callback_data !== callbackData
-        );
-        
-        if (remainingButtons.length > 0) {
-          await ctx.editMessageReplyMarkup({
-            inline_keyboard: [remainingButtons],
-          });
-        } else {
-          // No buttons left, remove them
-          await ctx.editMessageReplyMarkup({
-            inline_keyboard: [],
-          });
+        const message = ctx.callbackQuery?.message;
+        if (
+          message &&
+          'reply_markup' in message &&
+          message.reply_markup &&
+          'inline_keyboard' in message.reply_markup
+        ) {
+          const inlineKeyboard = message.reply_markup.inline_keyboard;
+          const currentKeyboardRow = inlineKeyboard[0] || [];
+          const remainingButtons = currentKeyboardRow.filter(
+            (btn): btn is InlineKeyboardButton =>
+              'callback_data' in btn && typeof btn.callback_data === 'string' && btn.callback_data !== callbackData
+          );
+
+          if (remainingButtons.length > 0) {
+            await ctx.editMessageReplyMarkup({
+              inline_keyboard: [remainingButtons],
+            });
+          } else {
+            // No buttons left, remove them
+            await ctx.editMessageReplyMarkup({
+              inline_keyboard: [],
+            });
+          }
         }
       } catch (editError) {
         // If editing fails, just log it (button action already completed)
@@ -137,4 +162,3 @@ export async function customButtonCallback(bot: Telegraf<Context>, ctx: Context)
     await ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
   }
 }
-

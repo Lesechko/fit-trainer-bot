@@ -143,12 +143,15 @@ export async function difficultyChoiceCallback(
       // Send description with buttons if any, otherwise just description
       if (buttons.length > 0) {
         await bot.telegram.sendMessage(telegramId, dayConfig.videoDescription, {
+          parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [buttons],
           },
         });
       } else {
-        await bot.telegram.sendMessage(telegramId, dayConfig.videoDescription);
+        await bot.telegram.sendMessage(telegramId, dayConfig.videoDescription, {
+          parse_mode: 'HTML',
+        });
       }
     }
 
