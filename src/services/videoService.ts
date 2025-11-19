@@ -84,6 +84,7 @@ export async function sendDayVideoToUser(
 
     await bot.telegram.sendVideo(telegramId, videoRow.file_id, {
       caption: videoTitle,
+      parse_mode: 'HTML',
     });
 
     // Send video description if available

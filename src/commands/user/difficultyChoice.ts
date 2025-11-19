@@ -107,6 +107,7 @@ export async function difficultyChoiceCallback(
     // Send the selected video with title as caption
     await bot.telegram.sendVideo(telegramId, videoFileId, {
       caption: dayConfig.videoTitle,
+      parse_mode: 'HTML',
     });
 
     // Send video description if available
