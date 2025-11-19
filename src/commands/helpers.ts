@@ -16,11 +16,24 @@ export function ensureFromAndAdmin(ctx: Context): boolean {
   return true;
 }
 
+export function adminGuard<T extends Context>(
+  callback: (ctx: T) => any
+): (ctx: T) => void | Promise<void> {
+  return async (ctx: T) => {
+    if (!ensureFromAndAdmin(ctx)) {
+      return;
+    }
+
+    await callback(ctx);
+  };
+}
+
 export function getCommandParts(ctx: Context): string[] {
   const message = ctx.message;
-  const text = message && typeof message === 'object' && 'text' in message
-    ? (message as { text: string }).text
-    : undefined;
+  const text =
+    message && typeof message === 'object' && 'text' in message
+      ? (message as { text: string }).text
+      : undefined;
 
   return (text || '').trim().split(/\s+/);
 }

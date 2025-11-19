@@ -4,19 +4,10 @@ import {
   SEND_DAILY_COMPLETE,
   SEND_DAILY_ERROR,
 } from '../messages';
-import { isAdmin } from '../services/userService';
 import { sendDailyVideos } from '../services/videoService';
 
 export function sendDailyCommandCallback(bot: Telegraf<Context>) {
   return async (ctx: Context) => {
-    if (!ctx.from) {
-      return;
-    }
-
-    if (!isAdmin(ctx)) {
-      return;
-    }
-
     await ctx.reply(SEND_DAILY_START);
 
     try {

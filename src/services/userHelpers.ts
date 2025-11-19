@@ -1,6 +1,3 @@
-/**
- * Format user display name from user data
- */
 export function formatUserDisplayName(user: {
   telegram_id: number;
   username: string | null;

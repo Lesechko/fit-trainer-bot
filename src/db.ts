@@ -164,6 +164,12 @@ export async function initializeSchema(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_user_courses_course_id ON user_courses(course_id)
     `);
     
+    // Composite index for efficient pagination queries (course_id + created_at for ORDER BY)
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_user_courses_course_created 
+      ON user_courses(course_id, created_at DESC)
+    `);
+    
     await db.query(`
       CREATE INDEX IF NOT EXISTS idx_course_access_codes_code ON course_access_codes(code)
     `);

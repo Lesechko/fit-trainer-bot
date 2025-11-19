@@ -4,18 +4,10 @@ import { COURSES } from '../config';
 import { NEW_USER_ENROLLMENT_NOTIFICATION } from '../messages';
 import { formatUserDisplayName } from './userHelpers';
 
-/**
- * Check if a user is an admin
- */
-export function isAdmin(ctx: Context | undefined | null): boolean {
-  return Boolean(
-    ADMIN_ID && ctx && (ctx as any).from && (ctx as any).from.id === ADMIN_ID
-  );
+export function isAdmin(ctx: Context): boolean {
+  return Boolean(ADMIN_ID && ctx.from && ctx.from.id === ADMIN_ID);
 }
 
-/**
- * Send notification to admin about new user enrollment
- */
 export async function notifyAdminNewEnrollment(
   bot: Telegraf<Context>,
   user: {
@@ -33,14 +25,11 @@ export async function notifyAdminNewEnrollment(
   }
 
   try {
-    // Get course title from config
     const courseConfig = COURSES.find((c) => c.slug === courseSlug);
     const courseTitle = courseConfig?.title || courseSlug;
 
-    // Format user display name
     const userDisplayName = formatUserDisplayName(user);
 
-    // Send notification to admin
     const notificationMessage = NEW_USER_ENROLLMENT_NOTIFICATION(
       userDisplayName,
       user.telegram_id,
@@ -54,4 +43,3 @@ export async function notifyAdminNewEnrollment(
     console.error('Failed to send admin notification:', error);
   }
 }
-

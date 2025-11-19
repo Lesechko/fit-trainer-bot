@@ -22,7 +22,6 @@ import {
 import { isAdmin } from '../services/userService';
 import { db } from '../db';
 import {
-  ensureFromAndAdmin,
   getCommandParts,
   getAdminCourseContext,
 } from './helpers';
@@ -37,8 +36,6 @@ export function videoUploadCallback(ctx: Context) {
 }
 
 export async function listVideosCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx)) return;
-
   try {
     const adminContext = await getAdminCourseContext(ctx.from!.id);
     if (!adminContext?.course_id) {
@@ -70,8 +67,6 @@ export async function listVideosCommandCallback(ctx: Context) {
 }
 
 export async function addVideoCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx)) return;
-
   const parts = getCommandParts(ctx);
   
   // Format: /addvideo <day> <file_id> - daily video for that day
@@ -112,8 +107,6 @@ export async function addVideoCommandCallback(ctx: Context) {
 }
 
 export async function addReferenceVideoCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx)) return;
-
   const parts = getCommandParts(ctx);
   
   // Format: /addref <file_id> - reference video (no day needed)
@@ -156,8 +149,6 @@ export async function addReferenceVideoCommandCallback(ctx: Context) {
 }
 
 export async function delVideoCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx)) return;
-
   const parts = getCommandParts(ctx);
   if (parts.length !== 2) {
     return ctx.reply(DELVIDEO_USAGE);
@@ -193,8 +184,6 @@ export async function delVideoCommandCallback(ctx: Context) {
 }
 
 export async function sendVideoBroadcastCommandCallback(ctx: Context) {
-  if (!ensureFromAndAdmin(ctx)) return;
-
   const parts = getCommandParts(ctx);
   if (parts.length !== 2) {
     return ctx.reply(SENDVIDEO_USAGE);

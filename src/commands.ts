@@ -14,6 +14,7 @@ import { difficultyChoiceCallback } from './commands/user/difficultyChoice';
 import {
   genAccessCodeCommandCallback,
   listUsersCommandCallback,
+  listUsersPaginationCallback,
   listCoursesCommandCallback,
   setCourseContextCommandCallback,
   syncCoursesFromConfigCommandCallback,
@@ -31,7 +32,7 @@ import {
 } from './commands/videos';
 import { sendDailyCommandCallback } from './commands/misc';
 import { ADMIN_COMMANDS_HELP } from './messages';
-import { isAdmin } from './services/userService';
+import { adminGuard } from './commands/helpers';
 
 export function registerCommands(bot: Telegraf<Context>) {
   // User commands
@@ -46,36 +47,31 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.action(/^start_day_1_\d+$/, (ctx) => startDay1Callback(bot, ctx));
   bot.action(/^custom_\d+_\d+_.+$/, (ctx) => customButtonCallback(bot, ctx));
   bot.action(/^difficulty_\d+_\d+_(easy|hard)$/, (ctx) => difficultyChoiceCallback(bot, ctx));
+  bot.action(/^listusers_page_\d+/, adminGuard(listUsersPaginationCallback));
 
   // Admin course management
-  bot.command('genaccess', genAccessCodeCommandCallback);
-  bot.command('listusers', listUsersCommandCallback);
-  bot.command('removeuser', removeUserCommandCallback);
-  bot.command('sendday', sendDayToUserCommandCallback(bot));
-  bot.command('courses', listCoursesCommandCallback);
-  bot.command('setcourse', setCourseContextCommandCallback);
-  bot.command('synccourses', syncCoursesFromConfigCommandCallback);
-  bot.command('context', contextCommandCallback);
+  bot.command('genaccess', adminGuard(genAccessCodeCommandCallback));
+  bot.command('listusers', adminGuard(listUsersCommandCallback));
+  bot.command('removeuser', adminGuard(removeUserCommandCallback));
+  bot.command('sendday', adminGuard(sendDayToUserCommandCallback(bot)));
+  bot.command('courses', adminGuard(listCoursesCommandCallback));
+  bot.command('setcourse', adminGuard(setCourseContextCommandCallback));
+  bot.command('synccourses', adminGuard(syncCoursesFromConfigCommandCallback));
+  bot.command('context', adminGuard(contextCommandCallback));
 
   // Video management commands
   bot.on(message('video'), videoUploadCallback);
-  bot.command('listvideos', listVideosCommandCallback);
-  bot.command('addvideo', addVideoCommandCallback);
-  bot.command('addref', addReferenceVideoCommandCallback);
-  bot.command('delvideo', delVideoCommandCallback);
-  bot.command('sendvideo', sendVideoBroadcastCommandCallback);
+  bot.command('listvideos', adminGuard(listVideosCommandCallback));
+  bot.command('addvideo', adminGuard(addVideoCommandCallback));
+  bot.command('addref', adminGuard(addReferenceVideoCommandCallback));
+  bot.command('delvideo', adminGuard(delVideoCommandCallback));
+  bot.command('sendvideo', adminGuard(sendVideoBroadcastCommandCallback));
 
   // Misc commands
-  bot.command('senddaily', sendDailyCommandCallback(bot));
+  bot.command('senddaily', adminGuard(sendDailyCommandCallback(bot)));
 
   // Admin help
-  bot.command('helpadmin', (ctx) => {
-    if (!ctx.from) {
-      return;
-    }
-
-    if (isAdmin(ctx)) {
-      return ctx.reply(ADMIN_COMMANDS_HELP);
-    }
-  });
+  bot.command('helpadmin', adminGuard((ctx) => {
+    return ctx.reply(ADMIN_COMMANDS_HELP);
+  }));
 }

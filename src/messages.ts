@@ -35,8 +35,12 @@ export const SEND_DAILY_ERROR = '⚠️ Помилка при надсиланн
 
 export const USERS_ERROR = '⚠️ Помилка при отриманні списку користувачів';
 export const USERS_EMPTY = '📂 Немає зареєстрованих користувачів';
-export const usersList = (list: string) =>
-  `👥 Користувачі та їх прогрес:\n${list}`;
+export const usersList = (list: string, page: number, totalPages: number, totalUsers: number, searchTerm?: string) => {
+  const searchInfo = searchTerm ? `\n🔍 Пошук: "${searchTerm}"` : '';
+  const pageInfo = totalPages > 1 ? `\n📄 Сторінка ${page} з ${totalPages}` : '';
+  return `👥 Користувачі та їх прогрес (всього: ${totalUsers})${searchInfo}${pageInfo}:\n\n${list}`;
+};
+export const LISTUSERS_USAGE = '⚠️ Використай так:\n/listusers — список користувачів\n/listusers search <термін> — пошук користувачів\n/listusers page <номер> — перейти на сторінку';
 
 // Video management
 export const ADDVIDEO_USAGE = '⚠️ Використай так: /addvideo <день> <file_id>\nПриклад: /addvideo 5 BAACAgI...';
