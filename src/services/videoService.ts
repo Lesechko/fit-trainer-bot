@@ -3,14 +3,14 @@ import { QueryResult } from 'pg';
 import { db } from '../db';
 import { COURSES, VIDEO_DIFFICULTY } from '../config';
 import { dayCaption, COMPLETION_BUTTON_TEXT } from '../messages';
-import { calculateProgramDay, getDayConfig } from './courseService';
+import { getDayConfig } from './courseService';
 import { isLessonCompleted } from './lessonService';
 import {
   CourseVideoRow,
   UserRow,
   CourseRow,
-  UserCourseRow,
   DifficultyChoice,
+  EnrolledUserWithDayRow,
 } from '../types';
 
 /**
@@ -168,16 +168,7 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
       // Skip courses without dailyTime (they are not scheduled)
       if (!courseConfig.dailyTime) continue;
 
-      // users enrolled to this course with start_date
-      const ucRes: QueryResult<
-        Pick<UserRow, 'telegram_id'> & Pick<UserCourseRow, 'start_date'>
-      > = await db.query(
-        'SELECT u.telegram_id, uc.start_date FROM user_courses uc JOIN users u ON u.id = uc.user_id WHERE uc.course_id = $1',
-        [course.id]
-      );
-      const enrolled = ucRes.rows;
-
-      if (enrolled.length === 0) continue;
+      const totalDays =  courseConfig.reviewFormUrl ? courseConfig.days.length + 1 : courseConfig.days.length;
 
       // Check if videos exist for this course (only daily videos, not reference videos)
       const videosRes: QueryResult<Pick<CourseVideoRow, 'day' | 'file_id'>> =
@@ -189,8 +180,57 @@ export async function sendDailyVideos(bot: Telegraf<Context>): Promise<void> {
 
       if (videos.length === 0) continue;
 
+      // Fetch active enrolled users (including those who just completed)
+      // Include users up to 1 day after course completion for review form
+      const ucRes: QueryResult<EnrolledUserWithDayRow> = await db.query(
+        `SELECT 
+          u.telegram_id, 
+          uc.start_date,
+          GREATEST(1, FLOOR((CURRENT_DATE - uc.start_date::date) + 1))::integer as current_day
+        FROM user_courses uc 
+        JOIN users u ON u.id = uc.user_id 
+        WHERE uc.course_id = $1 
+          AND GREATEST(1, FLOOR((CURRENT_DATE - uc.start_date::date) + 1)) <= $2`,
+        [course.id, totalDays ]
+      );
+      const enrolled = ucRes.rows;
+
+      if (enrolled.length === 0) continue;
+
       const sends = enrolled.map(async (user) => {
-        const day = calculateProgramDay(user.start_date);
+        const day = user.current_day;
+
+        // On the day after course completion, send review form (if configured)
+        if (day === totalDays && courseConfig.reviewFormUrl) {
+          const reviewMessage = `🎉 Вітаю з завершенням курсу!\n\nБуду дуже вдячна, якщо ти залишиш відгук про курс. Це допоможе мені покращити програму та допомогти іншим людям.\n\nПісля відгуку ти отримаєш бонусне відео! 🎁`;
+
+          return bot.telegram
+            .sendMessage(user.telegram_id, reviewMessage, {
+              parse_mode: 'HTML',
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    {
+                      text: '📝 Залишити відгук',
+                      url: courseConfig.reviewFormUrl,
+                    },
+                  ],
+                  [
+                    {
+                      text: '✅ Я залишив(ла) відгук',
+                      callback_data: `review_completed_${course.id}`,
+                    },
+                  ],
+                ],
+              },
+            })
+            .catch((sendErr: Error) => {
+              console.error(
+                `Помилка надсилання форми відгуку для ${user.telegram_id}:`,
+                sendErr.message
+              );
+            });
+        }
 
         // Get day-specific configuration
         const dayConfig = getDayConfig(courseConfig, day);

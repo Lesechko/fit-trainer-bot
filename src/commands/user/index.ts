@@ -11,3 +11,5 @@ export {
   lessonCompletionCallback,
   disabledButtonCallback,
 } from './lessons';
+
+export { reviewCompletionCallback } from './reviewCompletion';

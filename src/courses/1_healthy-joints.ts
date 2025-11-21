@@ -14,6 +14,9 @@ export const healthyJoints: CourseStaticConfig = {
     time: '10:00',
     defaultMessages: [],
   },
+  // Review form and bonus video (sent after course completion)
+  // reviewFormUrl: 'https://forms.gle/YOUR_FORM_ID', // Google form URL for reviews
+  // bonusVideoId: 123, // Video ID from database (use /listvideos to see IDs)
   days: [
     {
       day: 1,

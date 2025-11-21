@@ -8,6 +8,7 @@ import {
   restartCourseCallback,
   cancelRestartCallback,
   startDay1Callback,
+  reviewCompletionCallback,
 } from './commands/user';
 import { customButtonCallback } from './commands/user/customButtons';
 import { difficultyChoiceCallback } from './commands/user/difficultyChoice';
@@ -47,6 +48,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.action(/^start_day_1_\d+$/, (ctx) => startDay1Callback(bot, ctx));
   bot.action(/^custom_\d+_\d+_.+$/, (ctx) => customButtonCallback(bot, ctx));
   bot.action(/^difficulty_\d+_\d+_(easy|hard)$/, (ctx) => difficultyChoiceCallback(bot, ctx));
+  bot.action(/^review_completed_\d+$/, (ctx) => reviewCompletionCallback(bot, ctx));
   bot.action(/^listusers_page_\d+/, adminGuard(listUsersPaginationCallback));
 
   // Admin course management

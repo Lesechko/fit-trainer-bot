@@ -61,6 +61,15 @@ export type LessonCompletionRow = {
   completed_at: string;
 };
 
+export type EnrolledUserRow = {
+  telegram_id: number;
+  start_date: string;
+};
+
+export type EnrolledUserWithDayRow = EnrolledUserRow & {
+  current_day: number;
+};
+
 // Custom button action types
 export type CustomButtonAction = 
   | { type: 'video'; videoFileId: string; message?: string } // Send an extra video
@@ -119,6 +128,10 @@ export type CourseStaticConfig = {
   
   // Features
   trackLessonCompletion?: boolean; // Whether to track lesson completion (shows "Виконано!" button, tracks progress). Default: true. Set to false to disable this feature
+  
+  // Review and bonus
+  reviewFormUrl?: string; // Google form URL for course review (sent after course completion)
+  bonusVideoId?: number; // Database video ID (from course_videos table) for bonus video after review completion
   
   // Day-specific configuration
   days: CourseDayConfig[]; // All day data grouped together
