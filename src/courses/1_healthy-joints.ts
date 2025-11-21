@@ -11,7 +11,7 @@ export const healthyJoints: CourseStaticConfig = {
   dailyTime: '19:00',
   trackLessonCompletion: false,
   motivation: {
-    time: '09:00',
+    time: '10:00',
     defaultMessages: [],
   },
   days: [

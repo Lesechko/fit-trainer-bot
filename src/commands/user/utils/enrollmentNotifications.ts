@@ -2,7 +2,6 @@ import { Context, Telegraf } from 'telegraf';
 import { COURSES } from '../../../config';
 import { notifyAdminNewEnrollment } from '../../../services/userService';
 import {
-  REDEEM_OK,
   START_DAY_1_BUTTON_TEXT,
   START_DAY_1_MESSAGE,
 } from '../../../messages';
@@ -27,7 +26,6 @@ export async function sendEnrollmentConfirmation(
   );
 
   const course = COURSES.find((c) => c.slug === codeRow.slug);
-  void ctx.reply(REDEEM_OK(codeRow.slug));
 
   if (course?.welcome) {
     await ctx.reply(course.welcome, {
@@ -46,4 +44,3 @@ export async function sendEnrollmentConfirmation(
     },
   });
 }
-
