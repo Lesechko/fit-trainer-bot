@@ -24,7 +24,8 @@ export const healthyJoints: CourseStaticConfig = {
       videoDescription: typedMessages.days['1'].videoDescription,
       motivationMessage: typedMessages.days['1'].motivationMessage,
       autoSend: false,
-      // videoThumbnailFileId: 'AgACAgIAAxkBAAIB...', // Optional: Telegram photo file_id to use as video thumbnail
+      videoThumbnailFileId:
+        'AgACAgIAAxkBAAIC_WkkwZXwtAHpqX_sg-8rPFP-DkLmAAIUC2sb7dEoSQrD2qzoUBYKAQADAgADeAADNgQ', // Optional: Telegram photo file_id to use as video thumbnail
     },
     {
       day: 2,
@@ -45,8 +46,10 @@ export const healthyJoints: CourseStaticConfig = {
       motivationMessage: typedMessages.days['4'].motivationMessage,
       difficultyChoice: {
         message: typedMessages.days['4'].difficultyChoice!.message,
-        easyButtonText: typedMessages.days['4'].difficultyChoice!.easyButtonText,
-        hardButtonText: typedMessages.days['4'].difficultyChoice!.hardButtonText,
+        easyButtonText:
+          typedMessages.days['4'].difficultyChoice!.easyButtonText,
+        hardButtonText:
+          typedMessages.days['4'].difficultyChoice!.hardButtonText,
         easyVideoId: 13,
         hardVideoId: 14,
         // easyVideoThumbnailFileId: 'AgACAgIAAxkBAAIB...', // Optional: thumbnail for easy video
