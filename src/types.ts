@@ -91,6 +91,8 @@ export type DifficultyChoice = {
   hardButtonText?: string; // Text for hard button (default: "Складніший")
   easyVideoId: number; // Database video ID (from course_videos table) for easy version
   hardVideoId: number; // Database video ID (from course_videos table) for hard version
+  easyVideoThumbnailFileId?: string; // Optional thumbnail file_id for easy video
+  hardVideoThumbnailFileId?: string; // Optional thumbnail file_id for hard video
 };
 
 // Day-specific configuration
@@ -102,6 +104,7 @@ export type CourseDayConfig = {
   autoSend?: boolean; // Whether to auto-send this day via scheduled job (default: true). Set to false for manual sends (e.g., day 1 via button)
   customButtons?: CustomButton[]; // Custom buttons for this day (e.g., extra video, resources, etc.)
   difficultyChoice?: DifficultyChoice; // If set, asks user to choose difficulty before sending video (requires easyVideoFileId and hardVideoFileId)
+  videoThumbnailFileId?: string; // Optional thumbnail file_id for video preview (Telegram photo file_id)
   
   // Future extensibility examples:
   // dailyTime?: string; // Override course default for this day

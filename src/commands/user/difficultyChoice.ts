@@ -1,4 +1,5 @@
 import { Context, Telegraf } from 'telegraf';
+import type { InputFile } from 'telegraf/types';
 import { db } from '../../db';
 import { COURSES, VIDEO_DIFFICULTY } from '../../config';
 import { getDayConfig } from '../../services/courseService';
@@ -104,11 +105,22 @@ export async function difficultyChoiceCallback(
       console.error('Error removing difficulty buttons:', editError);
     }
 
-    // Send the selected video with title as caption
-    await bot.telegram.sendVideo(telegramId, videoFileId, {
+    // Prepare video options with optional thumbnail from config
+    const thumbnailFileId = difficulty === VIDEO_DIFFICULTY.EASY
+      ? dayConfig.difficultyChoice.easyVideoThumbnailFileId
+      : dayConfig.difficultyChoice.hardVideoThumbnailFileId;
+
+    const videoOptions: Parameters<typeof bot.telegram.sendVideo>[2] = {
       caption: dayConfig.videoTitle,
       parse_mode: 'HTML',
-    });
+    };
+
+    if (thumbnailFileId) {
+      videoOptions.thumbnail = thumbnailFileId as unknown as InputFile;
+    }
+
+    // Send the selected video with title as caption
+    await bot.telegram.sendVideo(telegramId, videoFileId, videoOptions);
 
     // Send video description if available
     if (dayConfig.videoDescription) {

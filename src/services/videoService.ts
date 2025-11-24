@@ -1,4 +1,5 @@
 import { Context, Telegraf } from 'telegraf';
+import type { InputFile } from 'telegraf/types';
 import { QueryResult } from 'pg';
 import { db } from '../db';
 import { COURSES, VIDEO_DIFFICULTY } from '../config';
@@ -82,10 +83,16 @@ export async function sendDayVideoToUser(
     // Send video with title as caption
     const videoTitle = dayConfig?.videoTitle || dayCaption(day);
 
-    await bot.telegram.sendVideo(telegramId, videoRow.file_id, {
+    const videoOptions: Parameters<typeof bot.telegram.sendVideo>[2] = {
       caption: videoTitle,
       parse_mode: 'HTML',
-    });
+    };
+
+    if (dayConfig?.videoThumbnailFileId) {
+      videoOptions.thumbnail = dayConfig.videoThumbnailFileId as unknown as InputFile;
+    }
+
+    await bot.telegram.sendVideo(telegramId, videoRow.file_id, videoOptions);
 
     // Send video description if available
     if (dayConfig?.videoDescription) {

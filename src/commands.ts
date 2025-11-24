@@ -25,6 +25,7 @@ import {
 } from './commands/adminUsers';
 import {
   videoUploadCallback,
+  photoUploadCallback,
   listVideosCommandCallback,
   addVideoCommandCallback,
   addReferenceVideoCommandCallback,
@@ -63,6 +64,7 @@ export function registerCommands(bot: Telegraf<Context>) {
 
   // Video management commands
   bot.on(message('video'), videoUploadCallback);
+  bot.on(message('photo'), photoUploadCallback);
   bot.command('listvideos', adminGuard(listVideosCommandCallback));
   bot.command('addvideo', adminGuard(addVideoCommandCallback));
   bot.command('addref', adminGuard(addReferenceVideoCommandCallback));
