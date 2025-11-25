@@ -35,17 +35,6 @@ export function videoUploadCallback(ctx: Context) {
   }
 }
 
-export function photoUploadCallback(ctx: Context) {
-  const message = ctx.message as Message.PhotoMessage | undefined;
-  const photo = message?.photo;
-
-  // Get the largest photo (last in array)
-  if (photo && photo.length > 0 && isAdmin(ctx)) {
-    const largestPhoto = photo[photo.length - 1];
-    return ctx.reply(largestPhoto.file_id);
-  }
-}
-
 export async function listVideosCommandCallback(ctx: Context) {
   try {
     const adminContext = await getAdminCourseContext(ctx.from!.id);

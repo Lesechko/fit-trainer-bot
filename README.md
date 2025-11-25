@@ -175,37 +175,6 @@ Allow users to choose difficulty level before receiving video:
 2. Get video IDs using `/listvideos` command
 3. Use those IDs in `easyVideoId` and `hardVideoId`
 
-### Video Thumbnails
-
-Add custom thumbnails (preview images) for your videos to make them more engaging:
-
-**How to get a photo file_id:**
-1. Send a photo to your bot (as admin)
-2. Bot will automatically reply with the photo's `file_id`
-3. Copy that `file_id` and use it in your config
-
-**Config file:**
-```typescript
-{
-  day: 1,
-  videoTitle: typedMessages.days['1'].videoTitle,
-  videoDescription: typedMessages.days['1'].videoDescription,
-  videoThumbnailFileId: 'AgACAgIAAxkBAAIB...', // Photo file_id from bot
-}
-```
-
-**For difficulty choice videos:**
-```typescript
-difficultyChoice: {
-  easyVideoId: 13,
-  hardVideoId: 14,
-  easyVideoThumbnailFileId: 'AgACAgIAAxkB...', // Optional thumbnail for easy video
-  hardVideoThumbnailFileId: 'AgACAgIAAxkB...', // Optional thumbnail for hard video
-}
-```
-
-The thumbnail will appear as a preview image when the video is sent to users.
-
 ### Custom Buttons
 
 Add custom buttons for extra videos, messages, or URLs:
@@ -274,7 +243,6 @@ export const myCourse: CourseStaticConfig = {
   videoDescription: typedMessages.days['1'].videoDescription,
   motivationMessage: typedMessages.days['1'].motivationMessage,
   autoSend: false,                     // Don't auto-send (default: true)
-  videoThumbnailFileId: 'AgACAgIAAxkB...', // Optional: Photo file_id for video thumbnail
   customButtons: [/* buttons */],       // Custom buttons for this day
   difficultyChoice: { /* choice */ },   // Easy/hard video choice
 }
@@ -302,9 +270,6 @@ export const myCourse: CourseStaticConfig = {
 
 # Get file_id for video (send video to bot)
 # Bot will reply with file_id
-
-# Get file_id for photo/thumbnail (send photo to bot)
-# Bot will reply with photo file_id (use for videoThumbnailFileId in config)
 ```
 
 ### Course Management

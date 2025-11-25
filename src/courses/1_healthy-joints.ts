@@ -15,8 +15,9 @@ export const healthyJoints: CourseStaticConfig = {
     defaultMessages: [],
   },
   // Review form and bonus video (sent after course completion)
-  // reviewFormUrl: 'https://forms.gle/YOUR_FORM_ID', // Google form URL for reviews
-  // bonusVideoId: 123, // Video ID from database (use /listvideos to see IDs)
+  reviewFormUrl:
+    'https://docs.google.com/forms/d/e/1FAIpQLSc3v7Rr9IQmEj-7kQW-2XudZsaWc-kKhNBh1BG8a3EmwtveqQ/viewform?usp=publish-editor', // Google form URL for reviews
+  bonusVideoId: 24, // Video ID from database (use /listvideos to see IDs)
   days: [
     {
       day: 1,
@@ -24,8 +25,6 @@ export const healthyJoints: CourseStaticConfig = {
       videoDescription: typedMessages.days['1'].videoDescription,
       motivationMessage: typedMessages.days['1'].motivationMessage,
       autoSend: false,
-      videoThumbnailFileId:
-        'AgACAgIAAxkBAAIC_WkkwZXwtAHpqX_sg-8rPFP-DkLmAAIUC2sb7dEoSQrD2qzoUBYKAQADAgADeAADNgQ', // Optional: Telegram photo file_id to use as video thumbnail
     },
     {
       day: 2,
@@ -52,8 +51,6 @@ export const healthyJoints: CourseStaticConfig = {
           typedMessages.days['4'].difficultyChoice!.hardButtonText,
         easyVideoId: 13,
         hardVideoId: 14,
-        // easyVideoThumbnailFileId: 'AgACAgIAAxkBAAIB...', // Optional: thumbnail for easy video
-        // hardVideoThumbnailFileId: 'AgACAgIAAxkBAAIB...', // Optional: thumbnail for hard video
       },
     },
     {
