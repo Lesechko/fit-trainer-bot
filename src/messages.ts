@@ -136,7 +136,6 @@ export const COURSE_IN_PROGRESS_RESTART = (courseName: string, currentDay: numbe
 export const RESTART_BUTTON_TEXT = '🔄 Почати курс заново';
 export const CANCEL_BUTTON_TEXT = '❌ Скасувати';
 export const START_DAY_1_BUTTON_TEXT = '🚀 Поїхали!';
-export const START_DAY_1_MESSAGE = 'Готовий почати? Натисни кнопку нижче, щоб отримати перше відео! 👇';
 export const REDEEM_OK = (slug: string) =>
   `✅ Тебе зараховано на курс: ${slug}!`;
 
