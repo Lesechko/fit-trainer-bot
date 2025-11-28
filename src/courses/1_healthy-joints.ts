@@ -17,7 +17,7 @@ export const healthyJoints: CourseStaticConfig = {
   // Review form and bonus video (sent after course completion)
   reviewFormUrl:
     'https://docs.google.com/forms/d/e/1FAIpQLSc3v7Rr9IQmEj-7kQW-2XudZsaWc-kKhNBh1BG8a3EmwtveqQ/viewform?usp=publish-editor', // Google form URL for reviews
-  bonusVideoId: 24, // Video ID from database (use /listvideos to see IDs)
+  bonusVideoId: 26, // Video ID from database (use /listvideos to see IDs)
   days: [
     {
       day: 1,
