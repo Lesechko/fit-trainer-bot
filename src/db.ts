@@ -10,6 +10,48 @@ export const db = new Pool({
       : false,
 });
 
+/**
+ * One-off migration: ensure telegram_id columns are BIGINT on existing databases.
+ * Safe to call on every startup; it will be a no-op if the type is already BIGINT.
+ */
+export async function migrateTelegramIdToBigint(): Promise<void> {
+  try {
+    console.log('Running telegram_id -> BIGINT migration (if needed)...');
+
+    await db.query(`
+      DO $$
+      BEGIN
+        -- users.telegram_id
+        IF EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'users'
+            AND column_name = 'telegram_id'
+            AND udt_name = 'int4'
+        ) THEN
+          ALTER TABLE users ALTER COLUMN telegram_id TYPE BIGINT;
+        END IF;
+
+        -- admin_context.telegram_id
+        IF EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'admin_context'
+            AND column_name = 'telegram_id'
+            AND udt_name = 'int4'
+        ) THEN
+          ALTER TABLE admin_context ALTER COLUMN telegram_id TYPE BIGINT;
+        END IF;
+      END
+      $$;
+    `);
+
+    console.log('✅ telegram_id migration completed (or was not needed)');
+  } catch (e) {
+    console.error('⚠️ telegram_id migration failed (non-fatal):', e);
+  }
+}
+
 export async function initializeSchema(): Promise<void> {
   try {
     // Create users table
