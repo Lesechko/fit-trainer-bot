@@ -16,7 +16,7 @@ export async function initializeSchema(): Promise<void> {
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        telegram_id INTEGER UNIQUE,
+        telegram_id BIGINT UNIQUE,
         username TEXT,
         first_name TEXT,
         last_name TEXT,
@@ -137,7 +137,7 @@ export async function initializeSchema(): Promise<void> {
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS admin_context (
-        telegram_id INTEGER PRIMARY KEY,
+        telegram_id BIGINT PRIMARY KEY,
         course_id INTEGER REFERENCES courses(id) ON DELETE SET NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
