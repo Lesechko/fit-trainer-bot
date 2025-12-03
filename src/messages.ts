@@ -208,3 +208,22 @@ export const LESSON_COMPLETED = (day: number) =>
 export const COMPLETION_ERROR = '⚠️ Помилка при відмітці завершення уроку.';
 export const COMPLETION_BUTTON_TEXT = '💪 Виконано!';
 export const COMPLETION_BUTTON_DISABLED_TEXT = '💚 Здоров\'я покращено!';
+
+// Payment messages
+export const PAYMENT_COMMAND_TEXT = '💳 Оберіть курс для оплати:';
+export const PAYMENT_COURSE_BUTTON = (title: string, price: number) => 
+  `${title} - ${price} грн`;
+export const PAYMENT_ERROR = '⚠️ Помилка при створенні платежу';
+export const PAYMENT_ALREADY_ENROLLED = (courseTitle: string) =>
+  `✅ Ти вже зареєстрований на курс "${courseTitle}"`;
+export const PAYMENT_CREATING = '⏳ Створюю платіжне посилання...';
+export const PAYMENT_LINK_TEXT = (courseTitle: string, amount: number) =>
+  `💳 Оплата курсу "${courseTitle}"\n\n` +
+  `💰 Сума: ${amount} грн\n\n` +
+  `Натисни кнопку нижче, щоб перейти до оплати:`;
+export const PAYMENT_BUTTON_TEXT = '💳 Оплатити';
+export const PAYMENT_PENDING = '⏳ Очікуємо підтвердження оплати. Після успішної оплати ти автоматично будеш зарахований на курс!';
+export const PAYMENT_SUCCESS = (courseTitle: string) =>
+  `✅ Оплата успішна! Ти зарахований на курс "${courseTitle}"`;
+export const PAYMENT_COURSE_NOT_FOUND = '⚠️ Курс не знайдено';
+export const PAYMENT_NO_COURSES = '⚠️ Наразі немає доступних курсів для оплати';

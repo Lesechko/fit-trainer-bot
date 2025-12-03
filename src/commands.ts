@@ -13,6 +13,10 @@ import {
 import { customButtonCallback } from './commands/user/customButtons';
 import { difficultyChoiceCallback } from './commands/user/difficultyChoice';
 import {
+  paymentCommandCallback,
+  paymentCourseCallback,
+} from './commands/payment';
+import {
   genAccessCodeCommandCallback,
   listUsersCommandCallback,
   listUsersPaginationCallback,
@@ -39,6 +43,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   // User commands
   bot.start(startCommandCallback(bot));
   bot.command('redeem', redeemCommandCallback(bot));
+  bot.command('pay', (ctx) => paymentCommandCallback(bot, ctx));
 
   // Callback handlers
   bot.action(/^complete_\d+_\d+$/, lessonCompletionCallback);
@@ -50,6 +55,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.action(/^difficulty_\d+_\d+_(easy|hard)$/, (ctx) => difficultyChoiceCallback(bot, ctx));
   bot.action(/^review_completed_\d+$/, (ctx) => reviewCompletionCallback(bot, ctx));
   bot.action(/^listusers_page_\d+/, adminGuard(listUsersPaginationCallback));
+  bot.action(/^pay_course_\d+$/, (ctx) => paymentCourseCallback(bot, ctx));
 
   // Admin course management
   bot.command('genaccess', adminGuard(genAccessCodeCommandCallback));

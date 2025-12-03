@@ -28,6 +28,14 @@ export const DATABASE_URL: string = (() => {
 
 export const BOT_USERNAME = process.env.BOT_USERNAME || '';
 
+// WayForPay configuration
+export const WAYFORPAY_MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || '';
+export const WAYFORPAY_MERCHANT_SECRET_KEY = process.env.WAYFORPAY_MERCHANT_SECRET_KEY || '';
+export const WAYFORPAY_MERCHANT_DOMAIN_NAME = process.env.WAYFORPAY_MERCHANT_DOMAIN_NAME || '';
+export const WAYFORPAY_SERVICE_URL = process.env.WAYFORPAY_SERVICE_URL || '';
+export const WAYFORPAY_API_URL = process.env.WAYFORPAY_API_URL || 'https://api.wayforpay.com/api';
+export const WEBHOOK_PORT = process.env.WEBHOOK_PORT ? Number(process.env.WEBHOOK_PORT) : 3000;
+
 export const COURSES: CourseStaticConfig[] = [healthyJoints];
 
 // Video difficulty levels

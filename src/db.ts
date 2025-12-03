@@ -10,48 +10,6 @@ export const db = new Pool({
       : false,
 });
 
-/**
- * One-off migration: ensure telegram_id columns are BIGINT on existing databases.
- * Safe to call on every startup; it will be a no-op if the type is already BIGINT.
- */
-export async function migrateTelegramIdToBigint(): Promise<void> {
-  try {
-    console.log('Running telegram_id -> BIGINT migration (if needed)...');
-
-    await db.query(`
-      DO $$
-      BEGIN
-        -- users.telegram_id
-        IF EXISTS (
-          SELECT 1
-          FROM information_schema.columns
-          WHERE table_name = 'users'
-            AND column_name = 'telegram_id'
-            AND udt_name = 'int4'
-        ) THEN
-          ALTER TABLE users ALTER COLUMN telegram_id TYPE BIGINT;
-        END IF;
-
-        -- admin_context.telegram_id
-        IF EXISTS (
-          SELECT 1
-          FROM information_schema.columns
-          WHERE table_name = 'admin_context'
-            AND column_name = 'telegram_id'
-            AND udt_name = 'int4'
-        ) THEN
-          ALTER TABLE admin_context ALTER COLUMN telegram_id TYPE BIGINT;
-        END IF;
-      END
-      $$;
-    `);
-
-    console.log('✅ telegram_id migration completed (or was not needed)');
-  } catch (e) {
-    console.error('⚠️ telegram_id migration failed (non-fatal):', e);
-  }
-}
-
 export async function initializeSchema(): Promise<void> {
   try {
     // Create users table
@@ -197,6 +155,19 @@ export async function initializeSchema(): Promise<void> {
       )
     `);
 
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS payment_orders (
+        id SERIAL PRIMARY KEY,
+        order_reference VARCHAR(255) UNIQUE NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+        status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'approved', 'declined', 'refunded')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP
+      )
+    `);
+
     // Essential indexes only - based on actual query patterns
     await db.query(`
       CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id)
@@ -218,6 +189,14 @@ export async function initializeSchema(): Promise<void> {
     
     await db.query(`
       CREATE INDEX IF NOT EXISTS idx_courses_slug ON courses(slug)
+    `);
+
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_payment_orders_reference ON payment_orders(order_reference)
+    `);
+
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_payment_orders_user_id ON payment_orders(user_id)
     `);
 
     console.log('✅ Database schema initialized successfully');

@@ -1,19 +1,19 @@
 import { Telegraf, Context } from 'telegraf';
 import { BOT_TOKEN } from './config';
-import { initializeSchema, migrateTelegramIdToBigint } from './db';
+import { initializeSchema } from './db';
 import { whitelistGuard } from './middleware';
 import { registerCommands } from './commands';
 import { scheduleDaily } from './cron';
+import { initializeWebhookServer } from './webhook';
+
+// Handle graceful shutdown
+let bot: Telegraf<Context> | null = null;
 
 async function startBot() {
   try {
     console.log('Initializing database schema...');
     await initializeSchema();
     console.log('Database schema initialized successfully');
-
-    // Run one-off migration to ensure telegram_id columns are BIGINT on existing DBs.
-    // Safe to keep during deploys; it becomes a no-op once columns are already BIGINT.
-    await migrateTelegramIdToBigint();
 
     bot = new Telegraf<Context>(BOT_TOKEN);
 
@@ -23,16 +23,18 @@ async function startBot() {
 
     await bot.launch();
     console.log('Bot started!');
+
+    // Initialize webhook server for WayForPay
+    if (process.env.WAYFORPAY_MERCHANT_SECRET_KEY) {
+      initializeWebhookServer(bot);
+    }
   } catch (error) {
     console.error('Failed to start bot:', error);
     process.exit(1);
   }
 }
 
-startBot();
-
-// Handle graceful shutdown
-let bot: Telegraf<Context> | null = null;
+void startBot();
 
 process.once('SIGINT', () => {
   console.log('Shutting down (SIGINT)...');

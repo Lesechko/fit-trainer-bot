@@ -1,5 +1,5 @@
 import { Context, Telegraf } from 'telegraf';
-import { REDEEM_USAGE, REDEEM_INVALID, START_ASK_CODE } from '../../messages';
+import { REDEEM_USAGE, REDEEM_INVALID, START_ASK_CODE, PAYMENT_PENDING, PAYMENT_SUCCESS } from '../../messages';
 import { getEnrollmentStartDateForCourse } from '../../services/courseService';
 import { ensureUserExists } from './utils/userUtils';
 import {
@@ -9,9 +9,11 @@ import {
 import { validateAndLoadCode, processUsedCode } from './utils/codeUtils';
 import { sendEnrollmentConfirmation } from './utils/enrollmentNotifications';
 import { handleRestartCourse, handleStartDay1 } from './utils/callbackUtils';
+import { getPaymentOrderByReference } from '../../services/wayforpayService';
+import { db } from '../../db';
 
 export function startCommandCallback(bot: Telegraf<Context>) {
-  return (ctx: Context) => {
+  return async (ctx: Context) => {
     if (!ctx.from) {
       return;
     }
@@ -23,11 +25,58 @@ export function startCommandCallback(bot: Telegraf<Context>) {
     const parts = (text || '').trim().split(/\s+/);
 
     if (parts.length === 2) {
-      return redeemWithCode(bot, ctx, parts[1]);
+      const param = parts[1];
+      
+      // Handle payment return
+      if (param.startsWith('payment_')) {
+        const orderReference = param.replace('payment_', '');
+        return handlePaymentReturn(bot, ctx, orderReference);
+      }
+      
+      // Handle access code
+      return redeemWithCode(bot, ctx, param);
     }
 
     void ctx.reply(START_ASK_CODE);
   };
+}
+
+/**
+ * Handle user return from payment
+ */
+async function handlePaymentReturn(
+  bot: Telegraf<Context>,
+  ctx: Context,
+  orderReference: string
+): Promise<void> {
+  try {
+    const paymentOrder = await getPaymentOrderByReference(orderReference);
+    
+    if (!paymentOrder) {
+      return ctx.reply('⚠️ Платіж не знайдено');
+    }
+
+    // Check if payment was successful
+    if (paymentOrder.status === 'approved') {
+      // Get course info
+      const courseResult = await db.query(
+        'SELECT slug, title FROM courses WHERE id = $1',
+        [paymentOrder.course_id]
+      );
+      
+      if (courseResult.rows.length > 0) {
+        const course = courseResult.rows[0];
+        return ctx.reply(PAYMENT_SUCCESS(course.title));
+      }
+    } else if (paymentOrder.status === 'pending' || paymentOrder.status === 'processing') {
+      return ctx.reply(PAYMENT_PENDING);
+    } else {
+      return ctx.reply('⚠️ Платіж не було завершено успішно');
+    }
+  } catch (error) {
+    console.error('Error handling payment return:', error);
+    return ctx.reply('⚠️ Помилка при перевірці платежу');
+  }
 }
 
 export function redeemCommandCallback(bot: Telegraf<Context>) {
