@@ -43,7 +43,7 @@ export function startCommandCallback(bot: Telegraf<Context>) {
 
 // Handle users who come from the website (via https://t.me/botname?start=site_courseslug)
 async function handleSiteUser(ctx: Context, courseSlug: string) {
-    const courseConfig = COURSES.find((c) => c.slug === courseSlug);
+  const courseConfig = COURSES.find((c) => c.slug === courseSlug);
   
   if (!courseConfig || !courseConfig.siteVisitor) {
     await ctx.reply(SITE_VISITOR_COURSE_NOT_FOUND);
@@ -51,6 +51,13 @@ async function handleSiteUser(ctx: Context, courseSlug: string) {
   }
   
   const { greeting, paymentUrl, paymentButtonText } = courseConfig.siteVisitor;
+  
+  // Check if payment URL is configured
+  if (!paymentUrl) {
+    console.error(`PAYMENT_URL not configured for course: ${courseSlug}`);
+    await ctx.reply(greeting, { parse_mode: 'HTML' });
+    return;
+  }
   
   // Send greeting with payment button
   await ctx.reply(greeting, {
