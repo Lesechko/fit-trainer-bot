@@ -11,6 +11,8 @@ export interface DayMessages {
 
 export interface CourseMessages {
   welcome: string;
+  siteGreeting: string;
+  sitePaymentButtonText: string;
   days: {
     [key: string]: DayMessages;
   };

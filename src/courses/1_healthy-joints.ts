@@ -18,6 +18,14 @@ export const healthyJoints: CourseStaticConfig = {
   reviewFormUrl:
     'https://docs.google.com/forms/d/e/1FAIpQLSc3v7Rr9IQmEj-7kQW-2XudZsaWc-kKhNBh1BG8a3EmwtveqQ/viewform?usp=publish-editor', // Google form URL for reviews
   bonusVideoId: 26, // Video ID from database (use /listvideos to see IDs)
+  
+  // Site visitor greeting and payment
+  siteVisitor: {
+    greeting: typedMessages.siteGreeting,
+    paymentUrl: process.env.PAYMENT_URL || '',
+    paymentButtonText: typedMessages.sitePaymentButtonText,
+  },
+  
   days: [
     {
       day: 1,

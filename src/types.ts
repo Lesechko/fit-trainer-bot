@@ -133,6 +133,13 @@ export type CourseStaticConfig = {
   reviewFormUrl?: string; // Google form URL for course review (sent after course completion)
   bonusVideoId?: number; // Database video ID (from course_videos table) for bonus video after review completion
   
+  // Site visitors (users who come via site_slug deep link)
+  siteVisitor?: {
+    greeting: string; // Greeting message for users from website
+    paymentUrl: string; // URL to payment service
+    paymentButtonText?: string; // Button text (default: "💳 Оплатити курс")
+  };
+  
   // Day-specific configuration
   days: CourseDayConfig[]; // All day data grouped together
 };

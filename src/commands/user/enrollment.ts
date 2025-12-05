@@ -1,5 +1,5 @@
 import { Context, Telegraf } from 'telegraf';
-import { REDEEM_USAGE, REDEEM_INVALID, START_ASK_CODE } from '../../messages';
+import { REDEEM_USAGE, REDEEM_INVALID, START_ASK_CODE, SITE_VISITOR_COURSE_NOT_FOUND } from '../../messages';
 import { getEnrollmentStartDateForCourse } from '../../services/courseService';
 import { ensureUserExists } from './utils/userUtils';
 import {
@@ -9,6 +9,7 @@ import {
 import { validateAndLoadCode, processUsedCode } from './utils/codeUtils';
 import { sendEnrollmentConfirmation } from './utils/enrollmentNotifications';
 import { handleRestartCourse, handleStartDay1 } from './utils/callbackUtils';
+import { COURSES } from '../../config';
 
 export function startCommandCallback(bot: Telegraf<Context>) {
   return (ctx: Context) => {
@@ -42,10 +43,29 @@ export function startCommandCallback(bot: Telegraf<Context>) {
 
 // Handle users who come from the website (via https://t.me/botname?start=site_courseslug)
 async function handleSiteUser(ctx: Context, courseSlug: string) {
-  console.log(`User ${ctx.from?.id} came from website. Course: ${courseSlug}`);
+    const courseConfig = COURSES.find((c) => c.slug === courseSlug);
   
-  // TODO: Add custom behavior for site users
-  await ctx.reply(`👋 Вітаю! Ви перейшли з сайту (курс: ${courseSlug}).`);
+  if (!courseConfig || !courseConfig.siteVisitor) {
+    await ctx.reply(SITE_VISITOR_COURSE_NOT_FOUND);
+    return;
+  }
+  
+  const { greeting, paymentUrl, paymentButtonText } = courseConfig.siteVisitor;
+  
+  // Send greeting with payment button
+  await ctx.reply(greeting, {
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: paymentButtonText || '💳 Оплатити курс',
+            url: paymentUrl,
+          },
+        ],
+      ],
+    },
+  });
 }
 
 export function redeemCommandCallback(bot: Telegraf<Context>) {
