@@ -23,11 +23,29 @@ export function startCommandCallback(bot: Telegraf<Context>) {
     const parts = (text || '').trim().split(/\s+/);
 
     if (parts.length === 2) {
+      const param = parts[1];
+      
+      // Check if user came from website (format: site_courseslug)
+      if (param.startsWith('site_')) {
+        const courseSlug = param.substring(5); // Remove "site_" prefix
+        if (courseSlug) {
+          return handleSiteUser(ctx, courseSlug);
+        }
+      }
+      
       return redeemWithCode(bot, ctx, parts[1]);
     }
 
     void ctx.reply(START_ASK_CODE);
   };
+}
+
+// Handle users who come from the website (via https://t.me/botname?start=site_courseslug)
+async function handleSiteUser(ctx: Context, courseSlug: string) {
+  console.log(`User ${ctx.from?.id} came from website. Course: ${courseSlug}`);
+  
+  // TODO: Add custom behavior for site users
+  await ctx.reply(`👋 Вітаю! Ви перейшли з сайту (курс: ${courseSlug}).`);
 }
 
 export function redeemCommandCallback(bot: Telegraf<Context>) {
