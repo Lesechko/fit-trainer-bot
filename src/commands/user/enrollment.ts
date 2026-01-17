@@ -1,7 +1,7 @@
 import { Context, Telegraf } from 'telegraf';
 import { REDEEM_USAGE, REDEEM_INVALID, START_ASK_CODE, SITE_VISITOR_COURSE_NOT_FOUND, PAYMENT_COMPLETION_ERROR, PAYMENT_ALREADY_ENROLLED } from '../../messages';
 import { getEnrollmentStartDateForCourse } from '../../services/courseService';
-import { ensureUserExists, getExistingEnrollment } from './utils/userUtils';
+import { ensureUserExists } from './utils/userUtils';
 import {
   handleExistingEnrollment,
   enrollUserInCourse,
@@ -84,21 +84,21 @@ export function getPaymentRedirectUrl(courseSlug: string): string {
 // Handle users who come from the website (via https://t.me/botname?start=site-courseslug)
 async function handleSiteUser(ctx: Context, courseSlug: string) {
   const courseConfig = COURSES.find((c) => c.slug === courseSlug);
-  
+
   if (!courseConfig || !courseConfig.siteVisitor) {
     await ctx.reply(SITE_VISITOR_COURSE_NOT_FOUND);
     return;
   }
-  
+
   const { greeting, paymentUrl, paymentButtonText } = courseConfig.siteVisitor;
-  
+
   // Check if payment URL is configured
   if (!paymentUrl) {
     console.error(`PAYMENT_URL not configured for course: ${courseSlug}`);
     await ctx.reply(greeting, { parse_mode: 'HTML' });
     return;
   }
-  
+
   // Send greeting with payment button
   // Note: Redirect URL is configured directly in WayForPay service settings
   await ctx.reply(greeting, {
@@ -194,20 +194,16 @@ async function handlePaymentCompletion(bot: Telegraf<Context>, ctx: Context, cou
       return;
     }
 
-    // Check if user is already enrolled in this course
-    const existingEnrollment = await getExistingEnrollment(userId);
-    if (existingEnrollment && existingEnrollment.course_id === course.id) {
-      await ctx.reply(PAYMENT_ALREADY_ENROLLED(courseConfig.title));
-      return;
-    }
+    // Create temporary code row for enrollment check (will be replaced with real code later)
+    const tempCodeRow = createTempCodeRow(course.id, courseSlug);
 
-    // Handle existing enrollment in another course
-    if (existingEnrollment) {
-      const tempCodeRow = createTempCodeRow(course.id, courseSlug);
-      const shouldContinue = await handleExistingEnrollment(ctx, userId, tempCodeRow);
-      if (!shouldContinue) {
-        return;
-      }
+    // Handle existing enrollment - same logic as code redemption
+    // This checks if user is enrolled in any course and handles:
+    // - Completed course: cleanup and allow new enrollment
+    // - In-progress course: show restart dialog
+    const shouldContinue = await handleExistingEnrollment(ctx, userId, tempCodeRow);
+    if (!shouldContinue) {
+      return;
     }
 
     // Create access code and enroll user
