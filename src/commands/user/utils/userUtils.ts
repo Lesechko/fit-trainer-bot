@@ -4,11 +4,15 @@ import { db } from '../../../db';
 import { UserRow } from '../../../types';
 import { ExistingCourseRow } from './enrollmentTypes';
 
-export async function ensureUserExists(ctx: Context): Promise<number | null> {
+
+export async function ensureUserExists(
+  ctx: Context,
+  entrySource?: string
+): Promise<number | null> {
   const telegramId = ctx.from!.id;
   const userRes: QueryResult<Pick<UserRow, 'id'>> = await db.query(
-    `INSERT INTO users (telegram_id, username, first_name, last_name, language_code, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, $6) 
+    `INSERT INTO users (telegram_id, username, first_name, last_name, language_code, entry_source, updated_at) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7) 
      ON CONFLICT (telegram_id) DO UPDATE SET 
        username = EXCLUDED.username,
        first_name = EXCLUDED.first_name,
@@ -29,6 +33,7 @@ export async function ensureUserExists(ctx: Context): Promise<number | null> {
       ctx.from!.first_name || null,
       ctx.from!.last_name || null,
       ctx.from!.language_code || null,
+      entrySource || null,
       new Date().toISOString(),
     ]
   );
@@ -43,4 +48,36 @@ export async function getExistingEnrollment(
     [userId]
   );
   return existingEnrollmentRes.rows[0] || null;
+}
+
+/**
+ * Update user's entry_source when they enroll in a course
+ * If user came from Instagram and enrolls, update to reflect they're now a course user
+ * @param userId - User ID
+ * @param newEntrySource - New entry source ('paid' for payment, 'code' for code redemption)
+ */
+export async function updateEntrySourceOnEnrollment(
+  userId: number,
+  newEntrySource: 'paid' | 'code'
+): Promise<void> {
+  // Check current entry_source
+  const userRes: QueryResult<{ entry_source: string | null }> = await db.query(
+    'SELECT entry_source FROM users WHERE id = $1',
+    [userId]
+  );
+
+  if (userRes.rows.length === 0) {
+    return;
+  }
+
+  const currentEntrySource = userRes.rows[0]?.entry_source;
+
+  // Only update if user came from Instagram (they got free video)
+  // This way we track the transition from Instagram visitor to course user
+  if (currentEntrySource === 'instagram') {
+    await db.query(
+      'UPDATE users SET entry_source = $1, updated_at = $2 WHERE id = $3',
+      [newEntrySource, new Date().toISOString(), userId]
+    );
+  }
 }

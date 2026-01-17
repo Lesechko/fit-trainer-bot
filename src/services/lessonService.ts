@@ -59,7 +59,11 @@ export async function getCourseProgress(
     );
 
     const completedLessons = parseInt(completedRes.rows[0].count);
-    const isCompleted = completedLessons >= totalDays;
+    // Completed if: (a) all lessons marked done in lesson_completions, OR
+    // (b) calendar has passed the last day (covers courses with trackLessonCompletion: false
+    //     where lesson_completions is never filled — e.g. healthy-joints)
+    const isCompleted =
+      completedLessons >= totalDays || currentDay > totalDays;
 
     return { currentDay, completedLessons, isCompleted };
   } catch (error) {

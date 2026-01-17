@@ -5,6 +5,7 @@ export type UserRow = {
   first_name: string | null;
   last_name: string | null;
   language_code: string | null;
+  entry_source: string | null; // 'instagram', 'site', 'code', 'paid', etc.
   created_at: string;
   updated_at: string;
 };
@@ -138,6 +139,26 @@ export type CourseStaticConfig = {
     greeting: string; // Greeting message for users from website
     paymentUrl: string; // URL to payment service
     paymentButtonText?: string; // Button text (default: "💳 Оплатити курс")
+  };
+  
+  // Instagram funnel (users who come via instagram-funnelname deep link)
+  instagramFunnel?: {
+    initialMessage: string; // Initial message text
+    initialButton?: {
+      text: string; // Button text
+      url?: string; // Button URL (optional)
+      callback_data?: string; // Button callback data (optional)
+    };
+    videoId: number; // Database video ID (from course_videos table)
+    followUpMessages?: Array<{
+      text: string; // Message text
+      button?: {
+        text: string; // Button text
+        url?: string; // Button URL (optional)
+        callback_data?: string; // Button callback data (optional)
+      };
+      delay: string; // Time delay after initial message (e.g., "20min", "2h", "1d")
+    }>;
   };
   
   // Day-specific configuration

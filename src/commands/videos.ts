@@ -14,6 +14,10 @@ import {
   DELVIDEO_ERROR,
   DELVIDEO_SUCCESS,
   DELVIDEO_NOT_FOUND,
+  GETVIDEO_USAGE,
+  GETVIDEO_NOT_FOUND,
+  GETVIDEO_ERROR,
+  GETVIDEO_SUCCESS,
   SENDVIDEO_USAGE,
   SENDVIDEO_START,
   SENDVIDEO_DONE,
@@ -25,6 +29,43 @@ import {
   getCommandParts,
   getAdminCourseContext,
 } from './helpers';
+
+/**
+ * Admin command: /getvideo <id>
+ * Fetches a video by its database ID from course_videos and sends it to the admin.
+ * Video IDs can be seen in /listvideos.
+ */
+export async function getVideoByIdCommandCallback(ctx: Context) {
+  const parts = getCommandParts(ctx);
+  if (parts.length !== 2) {
+    return ctx.reply(GETVIDEO_USAGE);
+  }
+
+  const id = Number(parts[1]);
+  if (!Number.isFinite(id) || id < 1) {
+    return ctx.reply(GETVIDEO_USAGE);
+  }
+
+  try {
+    const res: QueryResult<{ file_id: string }> = await db.query(
+      'SELECT file_id FROM course_videos WHERE id = $1',
+      [id]
+    );
+
+    if (!res.rows?.length || !res.rows[0]?.file_id) {
+      return ctx.reply(GETVIDEO_NOT_FOUND(id));
+    }
+
+    const fileId = res.rows[0].file_id;
+    const telegramId = ctx.from!.id;
+
+    await ctx.telegram.sendVideo(telegramId, fileId);
+    return ctx.reply(GETVIDEO_SUCCESS(id));
+  } catch (e) {
+    console.error('getVideoById error:', e);
+    return ctx.reply(GETVIDEO_ERROR);
+  }
+}
 
 export function videoUploadCallback(ctx: Context) {
   const message = ctx.message as Message.VideoMessage | undefined;

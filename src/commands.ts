@@ -9,6 +9,7 @@ import {
   cancelRestartCallback,
   startDay1Callback,
   reviewCompletionCallback,
+  instagramVideoCallback,
 } from './commands/user';
 import { customButtonCallback } from './commands/user/customButtons';
 import { difficultyChoiceCallback } from './commands/user/difficultyChoice';
@@ -16,13 +17,15 @@ import {
   genAccessCodeCommandCallback,
   listUsersCommandCallback,
   listUsersPaginationCallback,
+  listSiteUsersCommandCallback,
+  listSiteUsersPaginationCallback,
   listCoursesCommandCallback,
   setCourseContextCommandCallback,
   syncCoursesFromConfigCommandCallback,
   contextCommandCallback,
   removeUserCommandCallback,
   sendDayToUserCommandCallback,
-} from './commands/adminUsers';
+} from './commands/admin';
 import {
   videoUploadCallback,
   listVideosCommandCallback,
@@ -30,6 +33,7 @@ import {
   addReferenceVideoCommandCallback,
   delVideoCommandCallback,
   sendVideoBroadcastCommandCallback,
+  getVideoByIdCommandCallback,
 } from './commands/videos';
 import { sendDailyCommandCallback } from './commands/misc';
 import { ADMIN_COMMANDS_HELP } from './messages';
@@ -49,11 +53,14 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.action(/^custom_\d+_\d+_.+$/, (ctx) => customButtonCallback(bot, ctx));
   bot.action(/^difficulty_\d+_\d+_(easy|hard)$/, (ctx) => difficultyChoiceCallback(bot, ctx));
   bot.action(/^review_completed_\d+$/, (ctx) => reviewCompletionCallback(bot, ctx));
+  bot.action(/^instagram_video_.+$/, (ctx) => instagramVideoCallback(bot, ctx));
   bot.action(/^listusers_page_\d+/, adminGuard(listUsersPaginationCallback));
+  bot.action(/^listsiteusers_page_\d+/, adminGuard(listSiteUsersPaginationCallback));
 
   // Admin course management
   bot.command('genaccess', adminGuard(genAccessCodeCommandCallback));
   bot.command('listusers', adminGuard(listUsersCommandCallback));
+  bot.command('listsiteusers', adminGuard(listSiteUsersCommandCallback));
   bot.command('removeuser', adminGuard(removeUserCommandCallback));
   bot.command('sendday', adminGuard(sendDayToUserCommandCallback(bot)));
   bot.command('courses', adminGuard(listCoursesCommandCallback));
@@ -64,6 +71,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   // Video management commands
   bot.on(message('video'), videoUploadCallback);
   bot.command('listvideos', adminGuard(listVideosCommandCallback));
+  bot.command('getvideo', adminGuard(getVideoByIdCommandCallback));
   bot.command('addvideo', adminGuard(addVideoCommandCallback));
   bot.command('addref', adminGuard(addReferenceVideoCommandCallback));
   bot.command('delvideo', adminGuard(delVideoCommandCallback));

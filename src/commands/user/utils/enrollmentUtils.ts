@@ -10,7 +10,7 @@ import {
   CANCEL_BUTTON_TEXT,
 } from '../../../messages';
 import { CourseAccessCodeRow } from '../../../types';
-import { getExistingEnrollment } from './userUtils';
+import { getExistingEnrollment, updateEntrySourceOnEnrollment } from './userUtils';
 import { CodeRow } from './enrollmentTypes';
 
 export async function cleanupCompletedCourse(
@@ -98,7 +98,8 @@ export async function handleExistingEnrollment(
 export async function enrollUserInCourse(
   userId: number,
   codeRow: { course_id: number; id: number },
-  startDate: string
+  startDate: string,
+  entrySource?: 'paid' | 'code'
 ): Promise<void> {
   await db.query(
     'INSERT INTO user_courses (user_id, course_id, start_date) VALUES ($1, $2, $3) ON CONFLICT (user_id, course_id) DO NOTHING',
@@ -109,4 +110,9 @@ export async function enrollUserInCourse(
     'UPDATE course_access_codes SET is_used = TRUE, used_by = $1, used_at = $2 WHERE id = $3',
     [userId, new Date().toISOString(), codeRow.id]
   );
+
+  // Update entry_source if user came from Instagram and is now enrolling
+  if (entrySource) {
+    await updateEntrySourceOnEnrollment(userId, entrySource);
+  }
 }

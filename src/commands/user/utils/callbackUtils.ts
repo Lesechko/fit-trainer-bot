@@ -102,3 +102,75 @@ export async function handleStartDay1(
     console.error('Error editing message:', editError);
   }
 }
+
+/**
+ * Handle Instagram funnel video button click
+ * Format: instagram_video_{courseSlug}
+ */
+export async function handleInstagramVideo(
+  bot: Telegraf<Context>,
+  ctx: Context,
+  callbackData: string
+): Promise<void> {
+  try {
+    if (!ctx.from) {
+      return;
+    }
+
+    const telegramId = ctx.from.id;
+    
+    // Extract course slug from callback data
+    // Format: instagram_video_{slug}
+    // Note: slug may contain hyphens, so we need to handle splitting carefully
+    if (!callbackData.startsWith('instagram_video_')) {
+      await ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
+      return;
+    }
+
+    // Extract slug by removing 'instagram_video_' prefix
+    const courseSlug = callbackData.substring('instagram_video_'.length);
+
+    // Find course config
+    const { COURSES } = await import('../../../config');
+    const courseConfig = COURSES.find((c) => c.slug === courseSlug);
+
+    if (!courseConfig || !courseConfig.instagramFunnel) {
+      await ctx.answerCbQuery('⚠️ Курс не знайдено');
+      return;
+    }
+
+    const { videoId } = courseConfig.instagramFunnel;
+
+    // Get video from database
+    const videoRes: QueryResult<{ file_id: string }> = await db.query(
+      'SELECT file_id FROM course_videos WHERE id = $1',
+      [videoId]
+    );
+
+    if (videoRes.rows.length === 0) {
+      await ctx.answerCbQuery('⚠️ Відео не знайдено');
+      console.error(`Video with ID ${videoId} not found in database`);
+      return;
+    }
+
+    const videoFileId = videoRes.rows[0].file_id;
+
+    // Send video
+    await bot.telegram.sendVideo(telegramId, videoFileId);
+
+    // Remove button after video is sent
+    try {
+      await ctx.editMessageReplyMarkup({
+        inline_keyboard: [],
+      });
+    } catch (editError) {
+      // If editing fails, continue anyway (button action already completed)
+      console.error('Error removing button:', editError);
+    }
+
+    await ctx.answerCbQuery('✅ Відео надіслано!');
+  } catch (error) {
+    console.error('Error in handleInstagramVideo:', error);
+    await ctx.answerCbQuery('⚠️ Помилка при надсиланні відео');
+  }
+}

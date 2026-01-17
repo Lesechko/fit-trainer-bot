@@ -61,6 +61,14 @@ export const DELVIDEO_SUCCESS = (day: number) =>
 export const DELVIDEO_NOT_FOUND = (day: number) =>
   `⚠️ Відео для дня ${day} не знайдено в поточному курсі`;
 
+// Get video by DB id (admin receives it)
+export const GETVIDEO_USAGE = '⚠️ Використай так: /getvideo <id>\nПриклад: /getvideo 5\n\nID відео можна побачити в /listvideos.';
+export const GETVIDEO_NOT_FOUND = (id: number) =>
+  `⚠️ Відео з ID ${id} не знайдено в базі даних.`;
+export const GETVIDEO_ERROR = '⚠️ Помилка при отриманні відео';
+export const GETVIDEO_SUCCESS = (id: number) =>
+  `✅ Відео (ID: ${id}) надіслано.`;
+
 // Broadcast
 export const SENDVIDEO_USAGE = '⚠️ Використай так: /sendvideo <file_id>';
 export const SENDVIDEO_START =
@@ -87,6 +95,7 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 /addvideo <день> <file_id> — додати daily відео для дня
 /addref <file_id> — додати reference відео (для hard/easy опцій)
 /listvideos — список відео в поточному курсі (показує ID для використання в конфігурації)
+/getvideo <id> — отримати відео за ID з бази (надсилається тобі)
 /delvideo <день> — видалити відео для дня
 /sendvideo <file_id> — надіслати відео всім користувачам поточного курсу
 

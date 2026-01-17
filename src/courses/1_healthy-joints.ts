@@ -26,6 +26,22 @@ export const healthyJoints: CourseStaticConfig = {
     paymentButtonText: typedMessages.sitePaymentButtonText,
   },
   
+  // Instagram funnel (users who come via instagram-funnelname deep link)
+  instagramFunnel: {
+    initialMessage: 'Готово 💪\nТут ти отримаєш своє безкоштовне заняття для здорових суглобів.\n\nНатискай нижче, і почнемо.',
+    initialButton: {
+      text: 'Почнімо тренування',
+      // callback_data will be set dynamically to: instagram_video_{slug}
+    },
+    videoId: 27, // TODO: Replace with actual video ID from database (use /listvideos to see IDs)
+    followUpMessages: [
+      {
+        text: 'Як тобі перші вправи?\nУ більшості після 5–7 хв з\'являється легке тепло в суглобах — це нормально 🔥',
+        delay: '20min',
+      },
+    ],
+  },
+  
   days: [
     {
       day: 1,

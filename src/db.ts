@@ -63,10 +63,13 @@ export async function initializeSchema(): Promise<void> {
         first_name TEXT,
         last_name TEXT,
         language_code TEXT,
+        entry_source TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Migrations are now handled by runMigrations() in db/migrations.ts
 
 
     // --- Multi-course schema ---
