@@ -164,6 +164,9 @@ export const START_ASK_CODE =
 
 // Site visitors
 export const SITE_VISITOR_COURSE_NOT_FOUND = '⚠️ На жаль, курс не знайдено або наразі недоступний.';
+export const PAYMENT_COMPLETION_ERROR = '⚠️ Помилка при обробці оплати. Будь ласка, зверніться до підтримки.';
+export const PAYMENT_ALREADY_ENROLLED = (courseName: string) =>
+  `✅ Ти вже зареєстрований на курс "${courseName}"!`;
 
 // Courses (мультикурсова логіка)
 export const COURSE_NOT_FOUND = '⚠️ Курс не знайдено';

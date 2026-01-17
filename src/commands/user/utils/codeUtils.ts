@@ -59,3 +59,10 @@ export async function processUsedCode(
   return existingEnrollment.course_id === codeRow.course_id;
 }
 
+/**
+ * Generate a random access code
+ * Format: 8 characters (alphanumeric)
+ */
+export function generateAccessCode(): string {
+  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+}
