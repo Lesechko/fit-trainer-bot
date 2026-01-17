@@ -69,20 +69,6 @@ export async function createAccessCodeForPayment(courseId: number, courseSlug: s
 }
 
 /**
- * Create temporary code row for enrollment check
- */
-export function createTempCodeRow(courseId: number, courseSlug: string): CodeRow {
-  return {
-    id: 0,
-    code: '',
-    course_id: courseId,
-    expires_at: null,
-    is_used: false,
-    slug: courseSlug,
-  };
-}
-
-/**
  * Generate payment redirect URL format for reference
  * This is the URL format that should be configured in WayForPay service settings
  * Format: https://t.me/botname?start=paid-courseslug

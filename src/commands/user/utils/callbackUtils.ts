@@ -12,15 +12,16 @@ export async function handleRestartCourse(
   callbackData: string
 ): Promise<void> {
   const parts = callbackData.split('_');
-  if (parts.length !== 3) {
+  // restart_{courseId}_{code} — code may contain underscores, so rejoin parts[2..]
+  if (parts.length < 3) {
     await ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
     return;
   }
 
-  const courseId = parseInt(parts[1]);
-  const code = parts[2];
+  const courseId = parseInt(parts[1], 10);
+  const code = parts.slice(2).join('_');
 
-  if (!Number.isFinite(courseId)) {
+  if (!Number.isFinite(courseId) || !code) {
     await ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
     return;
   }

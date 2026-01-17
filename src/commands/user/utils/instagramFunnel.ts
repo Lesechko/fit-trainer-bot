@@ -8,6 +8,10 @@ import { parseDelayToMs, scheduleDelayedMessage } from './enrollmentHelpers';
 
 /**
  * Handle users who come from Instagram funnel (via https://t.me/botname?start=instagram-funnelname)
+ *
+ * Link formats:
+ * - Instagram funnel (free video): ?start=instagram-{slug}  — use this in Instagram ads
+ * - Payment redirect (after pay):  ?start=paid-{slug}      — set in WayForPay, do not use in Instagram
  */
 export async function handleInstagramFunnel(
   bot: Telegraf<Context>,

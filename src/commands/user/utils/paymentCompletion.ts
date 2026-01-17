@@ -5,10 +5,12 @@ import { COURSES } from '../../../config';
 import { ensureUserExists } from './userUtils';
 import { handleExistingEnrollment, enrollUserInCourse } from './enrollmentUtils';
 import { sendEnrollmentConfirmation } from './enrollmentNotifications';
-import { getCourseFromDb, createAccessCodeForPayment, createTempCodeRow } from './enrollmentHelpers';
+import { getCourseFromDb, createAccessCodeForPayment } from './enrollmentHelpers';
 
 /**
  * Handle users who return from payment service (via https://t.me/botname?start=paid-courseslug)
+ * Note: For the free Instagram funnel use ?start=instagram-{slug}, not paid-{slug}.
+ * paid-{slug} is only for the WayForPay redirect after payment.
  */
 export async function handlePaymentCompletion(
   bot: Telegraf<Context>,
@@ -37,20 +39,19 @@ export async function handlePaymentCompletion(
       return;
     }
 
-    // Create temporary code row for enrollment check (will be replaced with real code later)
-    const tempCodeRow = createTempCodeRow(course.id, courseSlug);
+    // Create access code before handleExistingEnrollment so the "Почати курс заново"
+    // button can use a real code when user has in-progress enrollment (empty code
+    // would break the callback and redeemWithCode).
+    const codeRow = await createAccessCodeForPayment(course.id, courseSlug);
 
     // Handle existing enrollment - same logic as code redemption
-    // This checks if user is enrolled in any course and handles:
     // - Completed course: cleanup and allow new enrollment
-    // - In-progress course: show restart dialog
-    const shouldContinue = await handleExistingEnrollment(ctx, userId, tempCodeRow);
+    // - In-progress course: show restart dialog (button uses codeRow.code above)
+    const shouldContinue = await handleExistingEnrollment(ctx, userId, codeRow);
     if (!shouldContinue) {
       return;
     }
 
-    // Create access code and enroll user
-    const codeRow = await createAccessCodeForPayment(course.id, courseSlug);
     const startDate = getEnrollmentStartDateForCourse(courseSlug);
     // Update entry_source if user came from Instagram (they're now a paying customer)
     await enrollUserInCourse(userId, codeRow, startDate, 'paid');
