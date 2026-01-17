@@ -67,8 +67,12 @@ export function startCommandCallback(bot: Telegraf<Context>) {
 }
 
 /**
- * Generate payment redirect URL that payment service should redirect to after payment
+ * Generate payment redirect URL format for reference
+ * This is the URL format that should be configured in WayForPay service settings
  * Format: https://t.me/botname?start=paid-courseslug
+ * 
+ * Note: The redirect URL is configured directly in WayForPay dashboard,
+ * not passed as a parameter in the payment URL
  */
 export function getPaymentRedirectUrl(courseSlug: string): string {
   if (!BOT_USERNAME) {
@@ -95,11 +99,8 @@ async function handleSiteUser(ctx: Context, courseSlug: string) {
     return;
   }
   
-  // Generate redirect URL for payment service
-  const redirectUrl = getPaymentRedirectUrl(courseSlug);
-  const paymentUrlWithRedirect = buildPaymentUrlWithRedirect(paymentUrl, redirectUrl);
-  
   // Send greeting with payment button
+  // Note: Redirect URL is configured directly in WayForPay service settings
   await ctx.reply(greeting, {
     parse_mode: 'HTML',
     reply_markup: {
@@ -107,22 +108,12 @@ async function handleSiteUser(ctx: Context, courseSlug: string) {
         [
           {
             text: paymentButtonText || '💳 Оплатити курс',
-            url: paymentUrlWithRedirect,
+            url: paymentUrl,
           },
         ],
       ],
     },
   });
-}
-
-/**
- * Build payment URL with redirect parameter
- * Payment service should support redirect_url parameter
- * If your payment service uses a different parameter name, adjust this
- */
-function buildPaymentUrlWithRedirect(paymentUrl: string, redirectUrl: string): string {
-  const separator = paymentUrl.includes('?') ? '&' : '?';
-  return `${paymentUrl}${separator}redirect_url=${encodeURIComponent(redirectUrl)}`;
 }
 
 /**
