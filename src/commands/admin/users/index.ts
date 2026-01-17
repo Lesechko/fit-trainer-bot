@@ -11,5 +11,6 @@ export {
 
 export {
   removeUserCommandCallback,
+  deleteUserCommandCallback,
   sendDayToUserCommandCallback,
 } from './actions';

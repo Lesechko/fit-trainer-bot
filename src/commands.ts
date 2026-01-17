@@ -24,6 +24,7 @@ import {
   syncCoursesFromConfigCommandCallback,
   contextCommandCallback,
   removeUserCommandCallback,
+  deleteUserCommandCallback,
   sendDayToUserCommandCallback,
 } from './commands/admin';
 import {
@@ -62,6 +63,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.command('listusers', adminGuard(listUsersCommandCallback));
   bot.command('listsiteusers', adminGuard(listSiteUsersCommandCallback));
   bot.command('removeuser', adminGuard(removeUserCommandCallback));
+  bot.command('deleteuser', adminGuard(deleteUserCommandCallback));
   bot.command('sendday', adminGuard(sendDayToUserCommandCallback(bot)));
   bot.command('courses', adminGuard(listCoursesCommandCallback));
   bot.command('setcourse', adminGuard(setCourseContextCommandCallback));

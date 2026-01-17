@@ -89,6 +89,7 @@ export const ADMIN_COMMANDS_HELP = `🛠️ Команди адміна:
 *Управління користувачами:*
 /listusers — список користувачів поточного курсу
 /removeuser <telegram_id> — видалити користувача з поточного курсу
+/deleteuser <telegram_id> — повністю видалити користувача (з усіх курсів, сайту) — для тесту з нуля
 /sendday <telegram_id> <день> — надіслати відео конкретного дня конкретному користувачу
 
 *Управління відео (для поточного курсу):*
@@ -148,13 +149,21 @@ export const START_DAY_1_BUTTON_TEXT = '🚀 Поїхали!';
 export const REDEEM_OK = (slug: string) =>
   `✅ Тебе зараховано на курс: ${slug}!`;
 
-// Remove user
+// Remove user (from current course only)
 export const REMOVEUSER_USAGE = '⚠️ Використай так: /removeuser <telegram_id>';
 export const REMOVEUSER_ERROR = '⚠️ Помилка при видаленні користувача';
 export const REMOVEUSER_SUCCESS = (telegramId: number, courseTitle: string) =>
   `✅ Користувач ${telegramId} видалений з курсу "${courseTitle}"`;
 export const REMOVEUSER_NOT_FOUND = (telegramId: number) =>
   `⚠️ Користувач ${telegramId} не знайдений у поточному курсі`;
+
+// Delete user (full remove: users, courses, site list — for testing from scratch)
+export const DELETEUSER_USAGE = '⚠️ Використай так: /deleteuser <telegram_id>';
+export const DELETEUSER_ERROR = '⚠️ Помилка при повному видаленні користувача';
+export const DELETEUSER_SUCCESS = (telegramId: number) =>
+  `✅ Користувач ${telegramId} повністю видалений. Він з’явиться як новий при /start.`;
+export const DELETEUSER_NOT_FOUND = (telegramId: number) =>
+  `⚠️ Користувач ${telegramId} не знайдений.`;
 
 // Send day to user
 export const SENDDAY_USAGE = '⚠️ Використай так: /sendday <telegram_id> <день>';

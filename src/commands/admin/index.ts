@@ -5,6 +5,7 @@ export {
   listSiteUsersCommandCallback,
   listSiteUsersPaginationCallback,
   removeUserCommandCallback,
+  deleteUserCommandCallback,
   sendDayToUserCommandCallback,
 } from './users';
 

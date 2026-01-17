@@ -5,6 +5,10 @@ import {
   REMOVEUSER_ERROR,
   REMOVEUSER_SUCCESS,
   REMOVEUSER_NOT_FOUND,
+  DELETEUSER_USAGE,
+  DELETEUSER_ERROR,
+  DELETEUSER_SUCCESS,
+  DELETEUSER_NOT_FOUND,
   SENDDAY_USAGE,
   SENDDAY_ERROR,
   SENDDAY_SUCCESS,
@@ -15,6 +19,46 @@ import {
 } from '../../../messages';
 import { getCommandParts, getAdminCourseContext } from '../../helpers';
 import { COURSES } from '../../../config';
+
+export async function deleteUserCommandCallback(ctx: Context) {
+  const parts = getCommandParts(ctx);
+  if (parts.length !== 2) {
+    return ctx.reply(DELETEUSER_USAGE);
+  }
+
+  const telegramId = Number(parts[1]);
+  if (!Number.isFinite(telegramId)) {
+    return ctx.reply(DELETEUSER_USAGE);
+  }
+
+  try {
+    const userRes: any = await db.query(
+      'SELECT id FROM users WHERE telegram_id = $1',
+      [telegramId]
+    );
+
+    if (userRes.rows.length === 0) {
+      return ctx.reply(DELETEUSER_NOT_FOUND(telegramId));
+    }
+
+    const userId = userRes.rows[0].id;
+
+    // Unmark access codes used by this user (so codes can be reused for testing)
+    await db.query(
+      'UPDATE course_access_codes SET is_used = FALSE, used_by = NULL, used_at = NULL WHERE used_by = $1',
+      [userId]
+    );
+
+    // Delete user — CASCADE removes user_courses and lesson_completions
+    await db.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    return ctx.reply(DELETEUSER_SUCCESS(telegramId));
+  } catch (e) {
+    console.error(e);
+    return ctx.reply(DELETEUSER_ERROR);
+  }
+}
+
 import { getDayConfig } from '../../../services/courseService';
 import { sendDayVideoToUser, sendDifficultyChoiceMessage } from '../../../services/videoService';
 
