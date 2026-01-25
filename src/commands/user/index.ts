@@ -6,6 +6,7 @@ export {
   cancelRestartCallback,
   startDay1Callback,
   instagramVideoCallback,
+  instagramFeedbackCallback,
 } from './enrollment';
 
 export {

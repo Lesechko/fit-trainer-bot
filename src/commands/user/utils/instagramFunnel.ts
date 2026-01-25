@@ -4,7 +4,8 @@ import { SITE_VISITOR_COURSE_NOT_FOUND } from '../../../messages';
 import { COURSES } from '../../../config';
 import { db } from '../../../db';
 import { ensureUserExists } from './userUtils';
-import { parseDelayToMs, scheduleDelayedMessage } from './enrollmentHelpers';
+import { parseDelayToMs } from './enrollmentHelpers';
+import { loadCourseMessages, scheduleFlexibleMessage, resolveMessageById } from './messageHelpers';
 
 /**
  * Handle users who come from Instagram funnel (via https://t.me/botname?start=instagram-funnelname)
@@ -88,6 +89,14 @@ export async function handleInstagramFunnel(
 
     // Schedule follow-up messages
     if (followUpMessages && followUpMessages.length > 0) {
+      const messages = await loadCourseMessages(courseConfig.slug);
+      const instagramMessages = messages?.instagramMessages;
+
+      if (!instagramMessages) {
+        console.error(`Instagram messages not found for course: ${courseConfig.slug}`);
+        return;
+      }
+
       for (const followUp of followUpMessages) {
         const delayMs = parseDelayToMs(followUp.delay);
         if (delayMs === null) {
@@ -95,12 +104,19 @@ export async function handleInstagramFunnel(
           continue;
         }
 
-        scheduleDelayedMessage(
+        const message = resolveMessageById(instagramMessages, followUp.messageId);
+        if (!message) {
+          console.error(`Message ${followUp.messageId} not found`);
+          continue;
+        }
+
+        scheduleFlexibleMessage(
           bot,
           telegramId,
-          followUp.text,
+          message,
+          courseConfig.slug,
           delayMs,
-          followUp.button
+          instagramMessages
         );
       }
     }

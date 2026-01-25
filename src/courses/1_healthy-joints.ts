@@ -36,8 +36,8 @@ export const healthyJoints: CourseStaticConfig = {
     videoId: 27, // TODO: Replace with actual video ID from database (use /listvideos to see IDs)
     followUpMessages: [
       {
-        text: 'Як тобі перші вправи?\nУ більшості після 5–7 хв з\'являється легке тепло в суглобах — це нормально 🔥',
-        delay: '20min',
+        messageId: 'followUp1',
+        delay: '1min',
       },
     ],
   },

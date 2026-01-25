@@ -5,6 +5,7 @@ import { UserRow } from '../../../types';
 import { EnrollmentRow } from './enrollmentTypes';
 import { sendDayVideoToUser } from '../../../services/videoService';
 import { redeemWithCode } from '../enrollment';
+import { loadCourseMessages, findResponseMessageByCallback, enrichButtonsWithPaymentUrl, sendFlexibleMessage } from './messageHelpers';
 
 export async function handleRestartCourse(
   bot: Telegraf<Context>,
@@ -173,5 +174,91 @@ export async function handleInstagramVideo(
   } catch (error) {
     console.error('Error in handleInstagramVideo:', error);
     await ctx.answerCbQuery('⚠️ Помилка при надсиланні відео');
+  }
+}
+
+/**
+ * Handle Instagram feedback button click
+ * Format: instagram_feedback_{courseSlug}_{answerNumber}
+ */
+export async function handleInstagramFeedback(
+  bot: Telegraf<Context>,
+  ctx: Context,
+  callbackData: string
+): Promise<void> {
+  try {
+    if (!ctx.from) {
+      return;
+    }
+
+    const telegramId = ctx.from.id;
+    
+    // Extract course slug and answer number from callback data
+    // Format: instagram_feedback_{slug}_{answerNumber}
+    if (!callbackData.startsWith('instagram_feedback_')) {
+      await ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
+      return;
+    }
+
+    // Extract slug and answer number
+    // Remove 'instagram_feedback_' prefix, then find last underscore
+    const remaining = callbackData.substring('instagram_feedback_'.length);
+    const lastUnderscoreIndex = remaining.lastIndexOf('_');
+    
+    if (lastUnderscoreIndex === -1) {
+      await ctx.answerCbQuery('⚠️ Помилка при обробці запиту');
+      return;
+    }
+
+    // Last part after underscore is the answer number (1-4), everything before is the slug
+    const courseSlug = remaining.substring(0, lastUnderscoreIndex);
+    const answerNumber = remaining.substring(lastUnderscoreIndex + 1);
+
+    // Find course config
+    const { COURSES } = await import('../../../config');
+    const courseConfig = COURSES.find((c) => c.slug === courseSlug);
+
+    if (!courseConfig || !courseConfig.siteVisitor) {
+      await ctx.answerCbQuery('⚠️ Курс не знайдено');
+      return;
+    }
+
+    // Load messages from JSON
+    const messages = await loadCourseMessages(courseSlug);
+    if (!messages?.instagramMessages) {
+      await ctx.answerCbQuery('⚠️ Повідомлення не знайдено');
+      return;
+    }
+
+    // Find button that matches this callback to get responseMessageId
+    const responseMessage = findResponseMessageByCallback(messages.instagramMessages, callbackData);
+    if (!responseMessage) {
+      await ctx.answerCbQuery('⚠️ Повідомлення не знайдено');
+      return;
+    }
+
+    // Handle payment URL for buttons
+    enrichButtonsWithPaymentUrl(responseMessage, courseConfig.siteVisitor.paymentUrl);
+
+    // Remove button after feedback is submitted
+    try {
+      await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+    } catch (editError) {
+      console.error('Error removing button:', editError);
+    }
+
+    // Send response message
+    await sendFlexibleMessage(
+      bot,
+      telegramId,
+      responseMessage,
+      courseSlug,
+      messages.instagramMessages
+    );
+
+    await ctx.answerCbQuery('✅ Дякую за відгук!');
+  } catch (error) {
+    console.error('Error in handleInstagramFeedback:', error);
+    await ctx.answerCbQuery('⚠️ Помилка при обробці відгуку');
   }
 }

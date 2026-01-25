@@ -119,20 +119,28 @@ export function scheduleDelayedMessage(
   telegramId: number,
   text: string,
   delayMs: number,
-  button?: { text: string; url?: string; callback_data?: string }
+  buttons?: Array<{ text: string; url?: string; callback_data?: string }>
 ): void {
   setTimeout(async () => {
     try {
       let replyMarkup: { inline_keyboard: any[][] } | undefined = undefined;
-      if (button) {
-        const btn: any = { text: button.text };
-        if (button.url) {
-          btn.url = button.url;
-        } else if (button.callback_data) {
-          btn.callback_data = button.callback_data;
+      
+      if (buttons && buttons.length > 0) {
+        const keyboardButtons: any[] = [];
+
+        for (const btn of buttons) {
+          const keyboardBtn: any = { text: btn.text };
+
+          if (btn.url) {
+            keyboardBtn.url = btn.url;
+          } else if (btn.callback_data) {
+            keyboardBtn.callback_data = btn.callback_data;
+          }
+          keyboardButtons.push(keyboardBtn);
         }
+        // Each button on its own row for better readability with long text
         replyMarkup = {
-          inline_keyboard: [[btn]],
+          inline_keyboard: keyboardButtons.map(btn => [btn]),
         };
       }
 

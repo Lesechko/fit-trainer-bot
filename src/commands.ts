@@ -10,6 +10,7 @@ import {
   startDay1Callback,
   reviewCompletionCallback,
   instagramVideoCallback,
+  instagramFeedbackCallback,
 } from './commands/user';
 import { customButtonCallback } from './commands/user/customButtons';
 import { difficultyChoiceCallback } from './commands/user/difficultyChoice';
@@ -55,6 +56,7 @@ export function registerCommands(bot: Telegraf<Context>) {
   bot.action(/^difficulty_\d+_\d+_(easy|hard)$/, (ctx) => difficultyChoiceCallback(bot, ctx));
   bot.action(/^review_completed_\d+$/, (ctx) => reviewCompletionCallback(bot, ctx));
   bot.action(/^instagram_video_.+$/, (ctx) => instagramVideoCallback(bot, ctx));
+  bot.action(/^instagram_feedback_.+$/, (ctx) => instagramFeedbackCallback(bot, ctx));
   bot.action(/^listusers_page_\d+/, adminGuard(listUsersPaginationCallback));
   bot.action(/^listsiteusers_page_\d+/, adminGuard(listSiteUsersPaginationCallback));
 

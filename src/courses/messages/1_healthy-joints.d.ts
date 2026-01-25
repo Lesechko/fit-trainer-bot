@@ -9,10 +9,27 @@ export interface DayMessages {
   };
 }
 
+export interface FlexibleMessage {
+  text: string;
+  buttons?: Array<{
+    text: string;
+    callback_data?: string;
+    url?: string;
+    responseMessageId?: string;
+  }>;
+  followUpMessages?: Array<{
+    messageId: string;
+    delay: string;
+  }>;
+}
+
 export interface CourseMessages {
   welcome: string;
   siteGreeting: string;
   sitePaymentButtonText: string;
+  instagramMessages?: {
+    [messageId: string]: FlexibleMessage;
+  };
   days: {
     [key: string]: DayMessages;
   };

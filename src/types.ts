@@ -1,3 +1,15 @@
+export type MessageButton = {
+  text: string;
+  url?: string;
+  callback_data?: string;
+};
+
+export type Message = {
+  text: string;
+  buttons?: MessageButton[];
+  delay: string;
+};
+
 export type UserRow = {
   id: number;
   telegram_id: number;
@@ -72,7 +84,7 @@ export type EnrolledUserWithDayRow = EnrolledUserRow & {
 };
 
 // Custom button action types
-export type CustomButtonAction = 
+export type CustomButtonAction =
   | { type: 'video'; videoFileId: string; message?: string } // Send an extra video
   | { type: 'message'; text: string } // Send a text message
   | { type: 'url'; url: string } // Open a URL (Telegram will handle this)
@@ -103,7 +115,7 @@ export type CourseDayConfig = {
   autoSend?: boolean; // Whether to auto-send this day via scheduled job (default: true). Set to false for manual sends (e.g., day 1 via button)
   customButtons?: CustomButton[]; // Custom buttons for this day (e.g., extra video, resources, etc.)
   difficultyChoice?: DifficultyChoice; // If set, asks user to choose difficulty before sending video (requires easyVideoFileId and hardVideoFileId)
-  
+
   // Future extensibility examples:
   // dailyTime?: string; // Override course default for this day
   // additionalContent?: string[]; // Extra messages for this day
@@ -112,55 +124,47 @@ export type CourseDayConfig = {
   // prerequisites?: number[]; // Days that must be completed first
 };
 
+
 // Static config for hardcoded courses in code
 export type CourseStaticConfig = {
   slug: string;
   title: string;
   welcome: string;
-  
+
   // Scheduling
   dailyTime?: string; // Default time for all days (HH:MM format). If not set, course is ignored by daily scheduler
-  
+
   // Motivation messages
   motivation?: {
     time: string; // When to send motivation (HH:MM format)
     defaultMessages?: string[]; // Fallback messages if day doesn't have one
   };
-  
+
   // Features
   trackLessonCompletion?: boolean; // Whether to track lesson completion (shows "Виконано!" button, tracks progress). Default: true. Set to false to disable this feature
-  
+
   // Review and bonus
   reviewFormUrl?: string; // Google form URL for course review (sent after course completion)
   bonusVideoId?: number; // Database video ID (from course_videos table) for bonus video after review completion
-  
+
   // Site visitors (users who come via site_slug deep link)
   siteVisitor?: {
     greeting: string; // Greeting message for users from website
     paymentUrl: string; // URL to payment service
     paymentButtonText?: string; // Button text (default: "💳 Оплатити курс")
   };
-  
+
   // Instagram funnel (users who come via instagram-funnelname deep link)
   instagramFunnel?: {
     initialMessage: string; // Initial message text
-    initialButton?: {
-      text: string; // Button text
-      url?: string; // Button URL (optional)
-      callback_data?: string; // Button callback data (optional)
-    };
+    initialButton?: MessageButton;
     videoId: number; // Database video ID (from course_videos table)
     followUpMessages?: Array<{
-      text: string; // Message text
-      button?: {
-        text: string; // Button text
-        url?: string; // Button URL (optional)
-        callback_data?: string; // Button callback data (optional)
-      };
+      messageId: string; // Reference to a message in instagramMessages (JSON)
       delay: string; // Time delay after initial message (e.g., "20min", "2h", "1d")
     }>;
   };
-  
+
   // Day-specific configuration
   days: CourseDayConfig[]; // All day data grouped together
 };

@@ -5,7 +5,7 @@ import { ensureUserExists } from './utils/userUtils';
 import { handleExistingEnrollment, enrollUserInCourse } from './utils/enrollmentUtils';
 import { validateAndLoadCode, processUsedCode } from './utils/codeUtils';
 import { sendEnrollmentConfirmation } from './utils/enrollmentNotifications';
-import { handleRestartCourse, handleStartDay1, handleInstagramVideo } from './utils/callbackUtils';
+import { handleRestartCourse, handleStartDay1, handleInstagramVideo, handleInstagramFeedback } from './utils/callbackUtils';
 import { extractCourseSlug, getCommandParam } from './utils/enrollmentHelpers';
 import { handleSiteUser } from './utils/siteVisitor';
 import { handlePaymentCompletion } from './utils/paymentCompletion';
@@ -196,5 +196,31 @@ export async function instagramVideoCallback(bot: Telegraf<Context>, ctx: Contex
   } catch (error) {
     console.error('Error in instagramVideoCallback:', error);
     await ctx.answerCbQuery('⚠️ Помилка при надсиланні відео');
+  }
+}
+
+export async function instagramFeedbackCallback(bot: Telegraf<Context>, ctx: Context) {
+  if (!ctx.from) {
+    return;
+  }
+
+  const callbackData =
+    'data' in (ctx.callbackQuery || {})
+      ? (ctx.callbackQuery as { data: string }).data
+      : undefined;
+
+  if (
+    !callbackData ||
+    typeof callbackData !== 'string' ||
+    !callbackData.startsWith('instagram_feedback_')
+  ) {
+    return;
+  }
+
+  try {
+    await handleInstagramFeedback(bot, ctx, callbackData);
+  } catch (error) {
+    console.error('Error in instagramFeedbackCallback:', error);
+    await ctx.answerCbQuery('⚠️ Помилка при обробці відгуку');
   }
 }
