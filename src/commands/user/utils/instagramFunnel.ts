@@ -5,7 +5,8 @@ import { COURSES } from '../../../config';
 import { db } from '../../../db';
 import { ensureUserExists } from './userUtils';
 import { parseDelayToMs } from './enrollmentHelpers';
-import { loadCourseMessages, scheduleFlexibleMessage, resolveMessageById } from './messageHelpers';
+import { loadInstagramMessages, scheduleFlexibleMessage, resolveMessageById } from './messageHelpers';
+import { notifyAdminNewInstagramUser } from '../../../services/userService';
 
 /**
  * Handle users who come from Instagram funnel (via https://t.me/botname?start=instagram-funnelname)
@@ -45,6 +46,7 @@ export async function handleInstagramFunnel(
     }
 
     // Ensure user exists with entry_source='instagram' (only set if new user)
+    const isNewUser = existingUserRes.rows.length === 0;
     const userId = await ensureUserExists(ctx, 'instagram');
     if (!userId) {
       return;
@@ -59,6 +61,20 @@ export async function handleInstagramFunnel(
     if (!courseConfig || !courseConfig.instagramFunnel) {
       await ctx.reply(SITE_VISITOR_COURSE_NOT_FOUND);
       return;
+    }
+
+    if (isNewUser) {
+      await notifyAdminNewInstagramUser(
+        bot,
+        {
+          telegram_id: telegramId,
+          username: ctx.from.username || null,
+          first_name: ctx.from.first_name || null,
+          last_name: ctx.from.last_name || null,
+        },
+        funnelName,
+        courseConfig.title
+      );
     }
 
     const { initialMessage, initialButton, videoId, followUpMessages } =
@@ -89,9 +105,7 @@ export async function handleInstagramFunnel(
 
     // Schedule follow-up messages
     if (followUpMessages && followUpMessages.length > 0) {
-      const messages = await loadCourseMessages(courseConfig.slug);
-      const instagramMessages = messages?.instagramMessages;
-
+      const instagramMessages = await loadInstagramMessages(courseConfig.slug);
       if (!instagramMessages) {
         console.error(`Instagram messages not found for course: ${courseConfig.slug}`);
         return;

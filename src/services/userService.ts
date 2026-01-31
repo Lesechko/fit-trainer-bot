@@ -1,7 +1,7 @@
 import { Context, Telegraf } from 'telegraf';
 import { ADMIN_ID } from '../config';
 import { COURSES } from '../config';
-import { NEW_USER_ENROLLMENT_NOTIFICATION } from '../messages';
+import { NEW_USER_ENROLLMENT_NOTIFICATION, NEW_INSTAGRAM_USER_NOTIFICATION } from '../messages';
 import { formatUserDisplayName } from './userHelpers';
 
 export function isAdmin(ctx: Context): boolean {
@@ -41,5 +41,33 @@ export async function notifyAdminNewEnrollment(
     await bot.telegram.sendMessage(ADMIN_ID, notificationMessage);
   } catch (error) {
     console.error('Failed to send admin notification:', error);
+  }
+}
+
+export async function notifyAdminNewInstagramUser(
+  bot: Telegraf<Context>,
+  user: {
+    telegram_id: number;
+    username: string | null;
+    first_name: string | null;
+    last_name: string | null;
+  },
+  funnelName: string,
+  courseTitle: string
+): Promise<void> {
+  if (!ADMIN_ID) {
+    return;
+  }
+  try {
+    const userDisplayName = formatUserDisplayName(user);
+    const message = NEW_INSTAGRAM_USER_NOTIFICATION(
+      userDisplayName,
+      user.telegram_id,
+      funnelName,
+      courseTitle
+    );
+    await bot.telegram.sendMessage(ADMIN_ID, message);
+  } catch (error) {
+    console.error('Failed to send admin Instagram user notification:', error);
   }
 }

@@ -5,7 +5,7 @@ import { UserRow } from '../../../types';
 import { EnrollmentRow } from './enrollmentTypes';
 import { sendDayVideoToUser } from '../../../services/videoService';
 import { redeemWithCode } from '../enrollment';
-import { loadCourseMessages, findResponseMessageByCallback, enrichButtonsWithPaymentUrl, sendFlexibleMessage } from './messageHelpers';
+import { loadInstagramMessages, findResponseMessageByCallback, enrichButtonsWithPaymentUrl, sendFlexibleMessage } from './messageHelpers';
 
 export async function handleRestartCourse(
   bot: Telegraf<Context>,
@@ -223,37 +223,32 @@ export async function handleInstagramFeedback(
       return;
     }
 
-    // Load messages from JSON
-    const messages = await loadCourseMessages(courseSlug);
-    if (!messages?.instagramMessages) {
+    const instagramMessages = await loadInstagramMessages(courseSlug);
+    if (!instagramMessages) {
       await ctx.answerCbQuery('⚠️ Повідомлення не знайдено');
       return;
     }
 
-    // Find button that matches this callback to get responseMessageId
-    const responseMessage = findResponseMessageByCallback(messages.instagramMessages, callbackData);
+    const responseMessage = findResponseMessageByCallback(instagramMessages, callbackData);
     if (!responseMessage) {
       await ctx.answerCbQuery('⚠️ Повідомлення не знайдено');
       return;
     }
 
-    // Handle payment URL for buttons
     enrichButtonsWithPaymentUrl(responseMessage, courseConfig.siteVisitor.paymentUrl);
 
-    // Remove button after feedback is submitted
     try {
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
     } catch (editError) {
       console.error('Error removing button:', editError);
     }
 
-    // Send response message
     await sendFlexibleMessage(
       bot,
       telegramId,
       responseMessage,
       courseSlug,
-      messages.instagramMessages
+      instagramMessages
     );
 
     await ctx.answerCbQuery('✅ Дякую за відгук!');

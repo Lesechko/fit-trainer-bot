@@ -226,6 +226,18 @@ export const NEW_USER_ENROLLMENT_NOTIFICATION = (
   `📅 Дата початку: ${startDate}\n` +
   `⏰ Час реєстрації: ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`;
 
+export const NEW_INSTAGRAM_USER_NOTIFICATION = (
+  userDisplayName: string,
+  telegramId: number,
+  funnelName: string,
+  courseTitle: string
+) =>
+  `📱 Новий користувач з Instagram!\n\n` +
+  `👤 Користувач: ${userDisplayName}\n` +
+  `🆔 Telegram ID: ${telegramId}\n` +
+  `📚 Фаннел: ${funnelName} — ${courseTitle}\n` +
+  `⏰ Час: ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`;
+
 // Lesson completion
 export const LESSON_COMPLETED = (day: number) =>
   `✅ День ${day} завершено! Відмінна робота! 🎉`;

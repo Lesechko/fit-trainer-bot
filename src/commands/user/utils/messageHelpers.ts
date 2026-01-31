@@ -1,26 +1,22 @@
 import { Telegraf } from 'telegraf';
 import { parseDelayToMs } from './enrollmentHelpers';
-import type { FlexibleMessage } from '../../../courses/messages/1_healthy-joints';
+import type { FlexibleMessage, InstagramMessages } from '../../../courses/messages/instagram/types';
 
 /**
- * Load course messages from JSON file
+ * Load Instagram funnel messages from dedicated file (courses/messages/instagram/).
  */
-export async function loadCourseMessages(courseSlug: string): Promise<{ instagramMessages?: { [messageId: string]: FlexibleMessage } } | null> {
+export async function loadInstagramMessages(courseSlug: string): Promise<InstagramMessages | null> {
   try {
-    // Map course slugs to message file paths
-    const messagePaths: Record<string, string> = {
-      'healthy-joints': '../../../courses/messages/1_healthy-joints.json',
+    const paths: Record<string, string> = {
+      'healthy-joints': '../../../courses/messages/instagram/1_healthy-joints.json',
     };
+    const path = paths[courseSlug];
+    if (!path) return null;
 
-    const messagesPath = messagePaths[courseSlug];
-    if (!messagesPath) {
-      return null;
-    }
-
-    const messages = await import(messagesPath);
-    return messages.default as { instagramMessages?: { [messageId: string]: FlexibleMessage } };
+    const module = await import(path);
+    return module.default as InstagramMessages;
   } catch (error) {
-    console.error(`Error loading messages for course ${courseSlug}:`, error);
+    console.error(`Error loading Instagram messages for ${courseSlug}:`, error);
     return null;
   }
 }
@@ -29,7 +25,7 @@ export async function loadCourseMessages(courseSlug: string): Promise<{ instagra
  * Find response message by callback_data
  */
 export function findResponseMessageByCallback(
-  instagramMessages: { [messageId: string]: FlexibleMessage } | undefined,
+  instagramMessages: InstagramMessages | undefined,
   callbackData: string
 ): FlexibleMessage | null {
   if (!instagramMessages) {
@@ -72,7 +68,7 @@ export function enrichButtonsWithPaymentUrl(
  * Resolve a message by ID from the instagramMessages object
  */
 export function resolveMessageById(
-  messages: { [messageId: string]: FlexibleMessage },
+  messages: InstagramMessages,
   messageId: string
 ): FlexibleMessage | null {
   return messages[messageId] || null;
@@ -86,7 +82,7 @@ export async function sendFlexibleMessage(
   telegramId: number,
   message: FlexibleMessage,
   courseSlug: string,
-  instagramMessages?: { [messageId: string]: FlexibleMessage }
+  instagramMessages?: InstagramMessages
 ): Promise<void> {
   const replyMarkup = buildReplyMarkup(message.buttons);
 
@@ -129,7 +125,7 @@ function scheduleFollowUpMessages(
   telegramId: number,
   message: FlexibleMessage,
   courseSlug: string,
-  instagramMessages?: { [messageId: string]: FlexibleMessage }
+  instagramMessages?: InstagramMessages
 ): void {
   if (!message.followUpMessages || !instagramMessages) {
     return;
@@ -163,7 +159,7 @@ export function scheduleFlexibleMessage(
   message: FlexibleMessage,
   courseSlug: string,
   delayMs: number,
-  instagramMessages?: { [messageId: string]: FlexibleMessage }
+  instagramMessages?: InstagramMessages
 ): void {
   setTimeout(async () => {
     await sendFlexibleMessage(bot, telegramId, message, courseSlug, instagramMessages);

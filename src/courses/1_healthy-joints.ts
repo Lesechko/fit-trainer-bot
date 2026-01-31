@@ -27,6 +27,7 @@ export const healthyJoints: CourseStaticConfig = {
   },
   
   // Instagram funnel (users who come via instagram-funnelname deep link)
+  // Messages: courses/messages/instagram/1_healthy-joints.json
   instagramFunnel: {
     initialMessage: 'Готово 💪\nТут ти отримаєш своє безкоштовне заняття для здорових суглобів.\n\nНатискай нижче, і почнемо.',
     initialButton: {
