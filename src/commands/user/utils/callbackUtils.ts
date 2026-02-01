@@ -5,7 +5,7 @@ import { UserRow } from '../../../types';
 import { EnrollmentRow } from './enrollmentTypes';
 import { sendDayVideoToUser } from '../../../services/videoService';
 import { redeemWithCode } from '../enrollment';
-import { loadInstagramMessages, findResponseMessageByCallback, enrichButtonsWithPaymentUrl, sendFlexibleMessage } from './messageHelpers';
+import { findResponseMessageByCallback, enrichButtonsWithPaymentUrl, sendFlexibleMessage } from './messageHelpers';
 
 export async function handleRestartCourse(
   bot: Telegraf<Context>,
@@ -218,12 +218,12 @@ export async function handleInstagramFeedback(
     const { COURSES } = await import('../../../config');
     const courseConfig = COURSES.find((c) => c.slug === courseSlug);
 
-    if (!courseConfig || !courseConfig.siteVisitor) {
+    if (!courseConfig || !courseConfig.instagramFunnel) {
       await ctx.answerCbQuery('⚠️ Курс не знайдено');
       return;
     }
 
-    const instagramMessages = await loadInstagramMessages(courseSlug);
+    const instagramMessages = courseConfig.instagramFunnel.instagramMessages;
     if (!instagramMessages) {
       await ctx.answerCbQuery('⚠️ Повідомлення не знайдено');
       return;
@@ -235,7 +235,7 @@ export async function handleInstagramFeedback(
       return;
     }
 
-    enrichButtonsWithPaymentUrl(responseMessage, courseConfig.siteVisitor.paymentUrl);
+    enrichButtonsWithPaymentUrl(responseMessage, courseConfig.siteVisitor?.paymentUrl, courseConfig.slug);
 
     try {
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] });

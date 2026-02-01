@@ -27,7 +27,7 @@ export const healthyJoints: CourseStaticConfig = {
   },
   
   // Instagram funnel (users who come via instagram-funnelname deep link)
-  // Messages: courses/messages/instagram/1_healthy-joints.json
+  // Messages: same JSON (messages.instagram) — one file per course
   instagramFunnel: {
     initialMessage: 'Готово 💪\nТут ти отримаєш своє безкоштовне заняття для здорових суглобів.\n\nНатискай нижче, і почнемо.',
     initialButton: {
@@ -36,11 +36,9 @@ export const healthyJoints: CourseStaticConfig = {
     },
     videoId: 27, // TODO: Replace with actual video ID from database (use /listvideos to see IDs)
     followUpMessages: [
-      {
-        messageId: 'followUp1',
-        delay: '1min',
-      },
+      { messageId: 'followUp1', delay: '1min' },
     ],
+    instagramMessages: typedMessages.instagram,
   },
   
   days: [

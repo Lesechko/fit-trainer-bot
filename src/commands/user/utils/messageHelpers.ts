@@ -3,25 +3,6 @@ import { parseDelayToMs } from './enrollmentHelpers';
 import type { FlexibleMessage, InstagramMessages } from '../../../courses/messages/instagram/types';
 
 /**
- * Load Instagram funnel messages from dedicated file (courses/messages/instagram/).
- */
-export async function loadInstagramMessages(courseSlug: string): Promise<InstagramMessages | null> {
-  try {
-    const paths: Record<string, string> = {
-      'healthy-joints': '../../../courses/messages/instagram/1_healthy-joints.json',
-    };
-    const path = paths[courseSlug];
-    if (!path) return null;
-
-    const module = await import(path);
-    return module.default as InstagramMessages;
-  } catch (error) {
-    console.error(`Error loading Instagram messages for ${courseSlug}:`, error);
-    return null;
-  }
-}
-
-/**
  * Find response message by callback_data
  */
 export function findResponseMessageByCallback(
@@ -46,18 +27,21 @@ export function findResponseMessageByCallback(
 }
 
 /**
- * Enrich buttons with payment URL where needed
+ * Enrich buttons with payment URL where needed.
+ * Matches callback_data instagram_payment_{courseSlug}.
  */
 export function enrichButtonsWithPaymentUrl(
   message: FlexibleMessage,
-  paymentUrl: string | undefined
+  paymentUrl: string | undefined,
+  courseSlug: string
 ): void {
   if (!message.buttons || !paymentUrl) {
     return;
   }
 
+  const paymentCallback = `instagram_payment_${courseSlug}`;
   for (const btn of message.buttons) {
-    if (btn.callback_data === 'instagram_payment_healthy-joints') {
+    if (btn.callback_data === paymentCallback) {
       btn.url = paymentUrl;
       delete btn.callback_data;
     }

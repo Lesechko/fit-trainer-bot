@@ -5,7 +5,7 @@ import { COURSES } from '../../../config';
 import { db } from '../../../db';
 import { ensureUserExists } from './userUtils';
 import { parseDelayToMs } from './enrollmentHelpers';
-import { loadInstagramMessages, scheduleFlexibleMessage, resolveMessageById } from './messageHelpers';
+import { resolveMessageById, sendFlexibleMessage } from './messageHelpers';
 import { notifyAdminNewInstagramUser } from '../../../services/userService';
 
 /**
@@ -103,36 +103,39 @@ export async function handleInstagramFunnel(
 
     // Video will be sent when button is clicked (via callback handler)
 
-    // Schedule follow-up messages
+    // Schedule follow-up messages in chain: each is sent after its delay from the previous one
     if (followUpMessages && followUpMessages.length > 0) {
-      const instagramMessages = await loadInstagramMessages(courseConfig.slug);
+      const instagramMessages = courseConfig.instagramFunnel.instagramMessages;
+      const courseSlug = courseConfig.slug;
       if (!instagramMessages) {
-        console.error(`Instagram messages not found for course: ${courseConfig.slug}`);
+        console.error(`Instagram messages not found for course: ${courseSlug}`);
         return;
       }
 
-      for (const followUp of followUpMessages) {
+      function scheduleNextFollowUp(index: number): void {
+        if (index >= followUpMessages!.length) {
+          return;
+        }
+        const followUp = followUpMessages![index];
         const delayMs = parseDelayToMs(followUp.delay);
         if (delayMs === null) {
           console.error(`Invalid delay format: ${followUp.delay}`);
-          continue;
+          scheduleNextFollowUp(index + 1);
+          return;
         }
-
-        const message = resolveMessageById(instagramMessages, followUp.messageId);
+        const message = resolveMessageById(instagramMessages!, followUp.messageId);
         if (!message) {
           console.error(`Message ${followUp.messageId} not found`);
-          continue;
+          scheduleNextFollowUp(index + 1);
+          return;
         }
-
-        scheduleFlexibleMessage(
-          bot,
-          telegramId,
-          message,
-          courseConfig.slug,
-          delayMs,
-          instagramMessages
-        );
+        setTimeout(async () => {
+          await sendFlexibleMessage(bot, telegramId, message, courseSlug, instagramMessages!);
+          scheduleNextFollowUp(index + 1);
+        }, delayMs);
       }
+
+      scheduleNextFollowUp(0);
     }
   } catch (e) {
     console.error('Error in handleInstagramFunnel:', e);

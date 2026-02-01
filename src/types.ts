@@ -1,3 +1,5 @@
+import type { InstagramMessages } from './courses/messages/instagram/types';
+
 export type MessageButton = {
   text: string;
   url?: string;
@@ -160,9 +162,11 @@ export type CourseStaticConfig = {
     initialButton?: MessageButton;
     videoId: number; // Database video ID (from course_videos table)
     followUpMessages?: Array<{
-      messageId: string; // Reference to a message in instagramMessages (JSON)
+      messageId: string; // Reference to a message in instagramMessages
       delay: string; // Time delay after initial message (e.g., "20min", "2h", "1d")
     }>;
+    /** Instagram funnel messages (follow-ups, responses). When set, loaded from course JSON; otherwise loaded from instagram/ file. */
+    instagramMessages?: InstagramMessages;
   };
 
   // Day-specific configuration

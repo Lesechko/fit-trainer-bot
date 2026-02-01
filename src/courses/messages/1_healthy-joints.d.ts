@@ -1,3 +1,5 @@
+import type { InstagramMessages } from './instagram/types';
+
 export interface DayMessages {
   videoTitle: string;
   videoDescription: string;
@@ -16,6 +18,7 @@ export interface CourseMessages {
   days: {
     [key: string]: DayMessages;
   };
+  instagram?: InstagramMessages;
 }
 
 declare const messages: CourseMessages;
