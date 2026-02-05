@@ -36,7 +36,7 @@ export const healthyJoints: CourseStaticConfig = {
     },
     videoId: 27, // TODO: Replace with actual video ID from database (use /listvideos to see IDs)
     followUpMessages: [
-      { messageId: 'followUp1', delay: '1min' },
+      { messageId: 'followUp1', delay: '20min' },
     ],
     instagramMessages: typedMessages.instagram,
   },
