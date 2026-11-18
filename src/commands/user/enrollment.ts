@@ -1,12 +1,18 @@
 import { Context, Telegraf } from 'telegraf';
-import { REDEEM_USAGE, REDEEM_INVALID, START_ASK_CODE } from '../../messages';
+import {
+  REDEEM_USAGE,
+  REDEEM_INVALID,
+  START_ASK_CODE,
+  START_MEMBER_CONNECTED,
+} from '../../messages';
 import { getEnrollmentStartDateForCourse } from '../../services/courseService';
 import { ensureUserExists } from './utils/userUtils';
 import { handleExistingEnrollment, enrollUserInCourse } from './utils/enrollmentUtils';
 import { validateAndLoadCode, processUsedCode } from './utils/codeUtils';
 import { sendEnrollmentConfirmation } from './utils/enrollmentNotifications';
 import { handleRestartCourse, handleStartDay1, handleInstagramVideo, handleInstagramFeedback } from './utils/callbackUtils';
-import { extractCourseSlug, getCommandParam } from './utils/enrollmentHelpers';
+import { getCommandParam } from './utils/enrollmentHelpers';
+import { resolveStartRoute } from './utils/startRoute';
 import { handleSiteUser } from './utils/siteVisitor';
 import { handlePaymentCompletion } from './utils/paymentCompletion';
 import { handleInstagramFunnel } from './utils/instagramFunnel';
@@ -17,32 +23,28 @@ export function startCommandCallback(bot: Telegraf<Context>) {
       return;
     }
 
-    const param = getCommandParam(ctx);
-    if (!param) {
-      void ctx.reply(START_ASK_CODE);
-      return;
+    const route = resolveStartRoute(getCommandParam(ctx));
+    switch (route.kind) {
+      case 'ask_code':
+        void ctx.reply(START_ASK_CODE);
+        return;
+      case 'member':
+        // Soft landing for cabinet reminders — no enroll, no access-code prompt.
+        void ctx.reply(START_MEMBER_CONNECTED);
+        return;
+      case 'paid':
+        return handlePaymentCompletion(bot, ctx, route.slug);
+      case 'site':
+        return handleSiteUser(ctx, route.slug);
+      case 'instagram':
+        return handleInstagramFunnel(bot, ctx, route.slug);
+      case 'access_code':
+        return redeemWithCode(bot, ctx, route.code);
+      default: {
+        const _exhaustive: never = route;
+        return _exhaustive;
+      }
     }
-
-    // Check if user came from payment redirect (format: paid-courseslug)
-    const paidSlug = extractCourseSlug(param, 'paid-');
-    if (paidSlug) {
-      return handlePaymentCompletion(bot, ctx, paidSlug);
-    }
-
-    // Check if user came from website (format: site-courseslug)
-    const siteSlug = extractCourseSlug(param, 'site-');
-    if (siteSlug) {
-      return handleSiteUser(ctx, siteSlug);
-    }
-
-    // Check if user came from Instagram funnel (format: instagram-funnelname)
-    const instagramFunnel = extractCourseSlug(param, 'instagram-');
-    if (instagramFunnel) {
-      return handleInstagramFunnel(bot, ctx, instagramFunnel);
-    }
-
-    // Otherwise, treat as access code
-    return redeemWithCode(bot, ctx, param);
   };
 }
 
