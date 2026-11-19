@@ -1,5 +1,5 @@
 import { Telegraf } from 'telegraf';
-import { parseDelayToMs } from './enrollmentHelpers';
+import { parseDelayToMs } from './delayUtils';
 import type { FlexibleMessage, InstagramMessages } from '../../../courses/messages/instagram/types';
 
 /**
@@ -134,18 +134,4 @@ function scheduleFollowUpMessages(
   }
 }
 
-/**
- * Schedule a flexible message with delay
- */
-export function scheduleFlexibleMessage(
-  bot: Telegraf<any>,
-  telegramId: number,
-  message: FlexibleMessage,
-  courseSlug: string,
-  delayMs: number,
-  instagramMessages?: InstagramMessages
-): void {
-  setTimeout(async () => {
-    await sendFlexibleMessage(bot, telegramId, message, courseSlug, instagramMessages);
-  }, delayMs);
-}
+

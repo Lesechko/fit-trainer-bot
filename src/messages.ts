@@ -180,6 +180,10 @@ export const SENDDAY_VIDEO_NOT_FOUND = (day: number) =>
 export const START_ASK_CODE =
   '🔑 Надішли, будь ласка, свій код доступу командою /redeem <code> або скористайся посиланням з параметром.';
 
+/** Platform cabinet reminders (`?start=member`). No course enroll, no access code. */
+export const START_MEMBER_CONNECTED =
+  '✅ Бот підключено. Нагадування з кабінету прийдуть сюди.';
+
 // Site visitors
 export const SITE_VISITOR_COURSE_NOT_FOUND = '⚠️ На жаль, курс не знайдено або наразі недоступний.';
 export const PAYMENT_COMPLETION_ERROR = '⚠️ Помилка при обробці оплати. Будь ласка, зверніться до підтримки.';

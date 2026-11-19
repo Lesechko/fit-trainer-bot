@@ -1,5 +1,6 @@
 import { Context } from 'telegraf';
 import { db } from '../../db';
+import { BOT_USERNAME } from '../../config';
 import {
   GENACCESS_USAGE,
   GENACCESS_CREATED,
@@ -8,6 +9,7 @@ import {
   GENACCESS_LINK,
 } from '../../messages';
 import { getCommandParts } from '../helpers';
+import { generateAccessCode } from '../user/utils/accessCodeFormat';
 
 export async function genAccessCodeCommandCallback(ctx: Context) {
   const parts = getCommandParts(ctx);
@@ -29,9 +31,7 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
       return ctx.reply('⚠️ Спочатку встанови курс командою /setcourse <slug>');
     }
 
-    const code =
-      Math.random().toString(36).slice(2, 10) +
-      Math.random().toString(36).slice(2, 6);
+    const code = generateAccessCode();
 
     const expiresAt = Number.isFinite(expiresDays)
       ? new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000)
@@ -55,8 +55,8 @@ export async function genAccessCodeCommandCallback(ctx: Context) {
     );
     await ctx.reply(GENACCESS_CODE(code));
 
-    if (process.env.BOT_USERNAME) {
-      const link = `https://t.me/${process.env.BOT_USERNAME}?start=${code}`;
+    if (BOT_USERNAME) {
+      const link = `https://t.me/${BOT_USERNAME}?start=${code}`;
 
       return ctx.reply(GENACCESS_LINK(link));
     }

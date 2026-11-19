@@ -4,7 +4,7 @@ import { SITE_VISITOR_COURSE_NOT_FOUND } from '../../../messages';
 import { COURSES } from '../../../config';
 import { db } from '../../../db';
 import { ensureUserExists } from './userUtils';
-import { parseDelayToMs } from './enrollmentHelpers';
+import { parseDelayToMs } from './delayUtils';
 import { resolveMessageById, sendFlexibleMessage } from './messageHelpers';
 import { notifyAdminNewInstagramUser } from '../../../services/userService';
 
