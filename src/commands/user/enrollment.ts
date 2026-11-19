@@ -12,6 +12,7 @@ import { validateAndLoadCode, processUsedCode } from './utils/codeUtils';
 import { sendEnrollmentConfirmation } from './utils/enrollmentNotifications';
 import { handleRestartCourse, handleStartDay1, handleInstagramVideo, handleInstagramFeedback } from './utils/callbackUtils';
 import { getCommandParam } from './utils/enrollmentHelpers';
+import { getCallbackData } from './utils/callbackData';
 import { resolveStartRoute } from './utils/startRoute';
 import { handleSiteUser } from './utils/siteVisitor';
 import { handlePaymentCompletion } from './utils/paymentCompletion';
@@ -124,16 +125,8 @@ export async function restartCourseCallback(
     return;
   }
 
-  const callbackData =
-    'data' in (ctx.callbackQuery || {})
-      ? (ctx.callbackQuery as { data: string }).data
-      : undefined;
-
-  if (
-    !callbackData ||
-    typeof callbackData !== 'string' ||
-    !callbackData.startsWith('restart_')
-  ) {
+  const callbackData = getCallbackData(ctx);
+  if (!callbackData || !callbackData.startsWith('restart_')) {
     return;
   }
 
@@ -154,16 +147,8 @@ export async function startDay1Callback(bot: Telegraf<Context>, ctx: Context) {
     return;
   }
 
-  const callbackData =
-    'data' in (ctx.callbackQuery || {})
-      ? (ctx.callbackQuery as { data: string }).data
-      : undefined;
-
-  if (
-    !callbackData ||
-    typeof callbackData !== 'string' ||
-    !callbackData.startsWith('start_day_1_')
-  ) {
+  const callbackData = getCallbackData(ctx);
+  if (!callbackData || !callbackData.startsWith('start_day_1_')) {
     return;
   }
 
@@ -180,16 +165,8 @@ export async function instagramVideoCallback(bot: Telegraf<Context>, ctx: Contex
     return;
   }
 
-  const callbackData =
-    'data' in (ctx.callbackQuery || {})
-      ? (ctx.callbackQuery as { data: string }).data
-      : undefined;
-
-  if (
-    !callbackData ||
-    typeof callbackData !== 'string' ||
-    !callbackData.startsWith('instagram_video_')
-  ) {
+  const callbackData = getCallbackData(ctx);
+  if (!callbackData || !callbackData.startsWith('instagram_video_')) {
     return;
   }
 
@@ -206,16 +183,8 @@ export async function instagramFeedbackCallback(bot: Telegraf<Context>, ctx: Con
     return;
   }
 
-  const callbackData =
-    'data' in (ctx.callbackQuery || {})
-      ? (ctx.callbackQuery as { data: string }).data
-      : undefined;
-
-  if (
-    !callbackData ||
-    typeof callbackData !== 'string' ||
-    !callbackData.startsWith('instagram_feedback_')
-  ) {
+  const callbackData = getCallbackData(ctx);
+  if (!callbackData || !callbackData.startsWith('instagram_feedback_')) {
     return;
   }
 

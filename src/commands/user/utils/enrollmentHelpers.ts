@@ -1,23 +1,14 @@
 import { Context } from 'telegraf';
 import { db } from '../../../db';
 import { BOT_USERNAME } from '../../../config';
-import { generateAccessCode } from './codeUtils';
+import { buildPaidStartUrl, generateAccessCode } from './accessCodeFormat';
 import { CodeRow } from './enrollmentTypes';
 
-/**
- * Extract course slug from parameter with prefix
- * Returns null if prefix doesn't match or slug is empty
- */
-export function extractCourseSlug(param: string, prefix: string): string | null {
-  if (!param.startsWith(prefix)) {
-    return null;
-  }
-  const courseSlug = param.substring(prefix.length);
-  return courseSlug || null;
-}
+export { parseDelayToMs } from './delayUtils';
+export { buildPaidStartUrl, generateAccessCode } from './accessCodeFormat';
 
 /**
- * Get command parameter from message text
+ * Get command parameter from message text (/start <param>).
  */
 export function getCommandParam(ctx: Context): string | null {
   const text =
@@ -69,87 +60,15 @@ export async function createAccessCodeForPayment(courseId: number, courseSlug: s
 }
 
 /**
- * Generate payment redirect URL format for reference
- * This is the URL format that should be configured in WayForPay service settings
+ * WayForPay return URL format (configure in merchant dashboard).
  * Format: https://t.me/botname?start=paid-courseslug
- * 
- * Note: The redirect URL is configured directly in WayForPay dashboard,
- * not passed as a parameter in the payment URL
+ *
+ * Note: This is documentation/reference only — the bot does not verify payment.
+ * See docs/bot-structure-audit.md P0 payment trust.
  */
 export function getPaymentRedirectUrl(courseSlug: string): string {
   if (!BOT_USERNAME) {
     throw new Error('BOT_USERNAME is not configured');
   }
-  return `https://t.me/${BOT_USERNAME}?start=paid-${courseSlug}`;
-}
-
-/**
- * Parse time delay string to milliseconds
- * Supports: "20min", "2h", "1d", "30min", "3h", "2d", etc.
- */
-export function parseDelayToMs(delay: string): number | null {
-  const normalized = delay.trim().toLowerCase();
-  
-  // Match number and unit
-  const match = normalized.match(/^(\d+)(min|h|d)$/);
-  if (!match) {
-    return null;
-  }
-  
-  const value = Number(match[1]);
-  const unit = match[2];
-  
-  switch (unit) {
-    case 'min':
-      return value * 60 * 1000; // minutes to milliseconds
-    case 'h':
-      return value * 60 * 60 * 1000; // hours to milliseconds
-    case 'd':
-      return value * 24 * 60 * 60 * 1000; // days to milliseconds
-    default:
-      return null;
-  }
-}
-
-/**
- * Schedule a delayed message to be sent
- */
-export function scheduleDelayedMessage(
-  bot: any, // Telegraf<Context>
-  telegramId: number,
-  text: string,
-  delayMs: number,
-  buttons?: Array<{ text: string; url?: string; callback_data?: string }>
-): void {
-  setTimeout(async () => {
-    try {
-      let replyMarkup: { inline_keyboard: any[][] } | undefined = undefined;
-      
-      if (buttons && buttons.length > 0) {
-        const keyboardButtons: any[] = [];
-
-        for (const btn of buttons) {
-          const keyboardBtn: any = { text: btn.text };
-
-          if (btn.url) {
-            keyboardBtn.url = btn.url;
-          } else if (btn.callback_data) {
-            keyboardBtn.callback_data = btn.callback_data;
-          }
-          keyboardButtons.push(keyboardBtn);
-        }
-        // Each button on its own row for better readability with long text
-        replyMarkup = {
-          inline_keyboard: keyboardButtons.map(btn => [btn]),
-        };
-      }
-
-      await bot.telegram.sendMessage(telegramId, text, {
-        parse_mode: 'HTML',
-        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-      });
-    } catch (error) {
-      console.error(`Error sending delayed message to ${telegramId}:`, error);
-    }
-  }, delayMs);
+  return buildPaidStartUrl(BOT_USERNAME, courseSlug);
 }

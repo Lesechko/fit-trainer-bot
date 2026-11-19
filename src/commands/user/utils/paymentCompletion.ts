@@ -10,7 +10,11 @@ import { getCourseFromDb, createAccessCodeForPayment } from './enrollmentHelpers
 /**
  * Handle users who return from payment service (via https://t.me/botname?start=paid-courseslug)
  * Note: For the free Instagram funnel use ?start=instagram-{slug}, not paid-{slug}.
- * paid-{slug} is only for the WayForPay redirect after payment.
+ * paid-{slug} is intended for the WayForPay redirect after payment.
+ *
+ * TODO(P0 payment trust): This path enrolls without verifying WayForPay payment.
+ * Do not "fix" with a secret in the start payload. Proper fix = merchant webhook
+ * (serviceUrl) + enroll after signed confirmation. See docs/bot-structure-audit.md.
  */
 export async function handlePaymentCompletion(
   bot: Telegraf<Context>,

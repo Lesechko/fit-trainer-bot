@@ -315,16 +315,37 @@ export const myCourse: CourseStaticConfig = {
 
 ```
 src/
-├── courses/
-│   ├── my-course.ts              # Course configuration
+├── index.ts                 # Boot: DB → Telegraf long polling → cron
+├── config.ts                # Env + COURSES registry
+├── messages.ts              # Shared UA copy
+├── middleware.ts            # Pass-through guard (admin cmds use adminGuard)
+├── cron.ts                  # Daily videos + motivation schedules
+├── db.ts / db/migrations.ts # Postgres schema + migrations
+├── types.ts
+├── courses/                 # Static course configs + JSON messages
+│   ├── 1_healthy-joints.ts
 │   └── messages/
-│       ├── my-course.json        # All messages/content
-│       └── my-course.d.ts        # TypeScript types
-├── commands/                     # Bot commands
-├── services/                     # Business logic
-├── config.ts                     # App configuration
-└── types.ts                      # TypeScript types
+├── commands.ts              # registerCommands wiring
+├── commands/
+│   ├── user/                # /start, /redeem, lessons, difficulty, review
+│   │   └── utils/           # startRoute, enroll helpers, site/paid/IG
+│   ├── admin/               # access codes, users, courses
+│   ├── videos.ts
+│   └── misc.ts              # /senddaily
+└── services/                # video / course day math / lessons / notify
 ```
+
+Докладніше: [`docs/bot-structure-audit.md`](docs/bot-structure-audit.md).
+
+### Як додати курс (коротко)
+
+1. `src/courses/messages/<slug>.json` (+ `.d.ts`) — тексти.
+2. `src/courses/<slug>.ts` — `CourseStaticConfig` (дні, `dailyTime`, siteVisitor, Instagram…).
+3. Додати експорт у `COURSES` у `src/config.ts`.
+4. Після деплою: адмін `/synccourses`, `/setcourse <slug>`, `/addvideo` / `/addref`.
+5. Deep links: `site-<slug>`, `paid-<slug>`, `instagram-<slug>`, або `/genaccess`.
+
+**Не чіпати:** `setWebhook` (лише long polling); курси лишаються в боті, не в platform `/me`.
 
 ## Benefits of This Structure
 

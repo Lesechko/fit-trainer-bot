@@ -10,7 +10,7 @@
     "migrate": "npm run build && node dist/scripts/runMigrations.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "test": "npm run build && node --test dist/commands/user/utils/startRoute.test.js"
+    "test": "npm run build && node --test dist/commands/user/utils/*.test.js"
   },
   "keywords": [],
   "author": "",
